@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.IO.Ports;
 using System.Text;
-using System.Threading.Tasks;
-using System.IO.Ports;
-using System.Threading;
 
 namespace CTG_Comms
 {
@@ -62,7 +57,7 @@ namespace CTG_Comms
 
                 if (isOpen)
                 {
-                    readCancellation = new CancellationTokenSource();
+                    readCancellation = new();
                     _ = StartReading(readCancellation.Token);
                 }
 
@@ -80,7 +75,6 @@ namespace CTG_Comms
         CTGframe InFrame  = new(toWrite: false);
         CTGframe OutFrame = new(toWrite: true);
         bool IsContinuous = false;
-        volatile int nCount = 0;
         int nLastDataTick = 0;
 
 
@@ -132,8 +126,6 @@ namespace CTG_Comms
                             if (SP.IsOpen)
                             {
                                 SP.DiscardOutBuffer();
-
-                                Write("G");
                             }
                         }
                         catch (Exception ex)
@@ -214,7 +206,6 @@ namespace CTG_Comms
 
                 if (InFrame.IsComplete)
                 {
-                    nCount++;
                     InFrame.ProcessFrame();
                     FrameReceived?.Invoke(this, InFrame);
                 }
@@ -230,7 +221,7 @@ namespace CTG_Comms
 
             switch (val)
             {
-                case "G": IsContinuous = true ; nCount = 0; break;
+                case "G": IsContinuous = true ; break;
                 case "H": IsContinuous = false; break;
             }
 
@@ -257,7 +248,6 @@ namespace CTG_Comms
             if (isOpen)
             {
                 readCancellation?.Cancel();
-                Write("H");
                 await Task.Delay(500).ConfigureAwait(false);
 
                 try
