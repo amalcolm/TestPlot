@@ -4,18 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CTG_Comms
+namespace Plotter
 {
-    public class C_Frame : CTGframe
+    public class C_Frame : MyFrame
     {
         public const int SamplesPerFrame = 4;
 
         public byte       C        { get; private set; } = 0;
-        public CTGStatus? Status   { get; private set; } 
-        public double[]   HR1      { get; } = [ 0,0,0,0 ];
-        public double[]   HR2      { get; } = [ 0,0,0,0 ];
-        public double[]   MHR      { get; } = [ 0,0,0,0 ];
-        public double[]   TOCO     { get; } = [ 0,0,0,0 ];
         public ushort     HRmode   { get; private set; } = 0;
         public byte       TOCOmode { get; private set; } = 0;
         public ushort     SpO2     { get; private set; } = 0;
@@ -31,15 +26,9 @@ namespace CTG_Comms
             if (C == 'C')  // 0x43 for CTG data
             {
                 var status = ReadWord();
-                ReadArray(HR1, ReadHR);
-                ReadArray(HR2, ReadHR);
-                ReadArray(MHR, ReadHR);
-                ReadArray(TOCO, ReadTOCO);
                 HRmode = ReadWord();
                 TOCOmode = ReadByte();
                 SpO2 = ReadByte();
-
-                Status = new(this);
             }
             else
             {

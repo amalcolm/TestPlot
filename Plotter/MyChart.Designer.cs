@@ -1,14 +1,14 @@
-﻿namespace TestPlot
+﻿namespace Plotter
 {
-    partial class Form1
+    partial class MyChart
     {
-        /// <summary>
-        ///  Required designer variable.
+        /// <summary> 
+        /// Required designer variable.
         /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        ///  Clean up any resources being used.
+        /// <summary> 
+        /// Clean up any resources being used.
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
@@ -20,11 +20,11 @@
             base.Dispose(disposing);
         }
 
-        #region Windows Form Designer generated code
+        #region Component Designer generated code
 
-        /// <summary>
-        ///  Required method for Designer support - do not modify
-        ///  the contents of this method with the code editor.
+        /// <summary> 
+        /// Required method for Designer support - do not modify 
+        /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent()
         {
@@ -34,19 +34,25 @@
             // formsPlot1
             // 
             formsPlot1.DisplayScale = 1F;
-            formsPlot1.Location = new Point(11, 17);
+            formsPlot1.Dock = DockStyle.Fill;
+            formsPlot1.Location = new Point(0, 0);
             formsPlot1.Name = "formsPlot1";
-            formsPlot1.Size = new Size(1194, 700);
+            formsPlot1.Size = new Size(711, 480);
             formsPlot1.TabIndex = 0;
+            formsPlot1.Parent = this;
+            formsPlot1.BackColor = Color.Gainsboro;
+
+
             // 
-            // Form1
+            // MyChart
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1217, 729);
+            BackColor = Color.Transparent;
             Controls.Add(formsPlot1);
-            Name = "Form1";
-            Text = "Form1";
+            Name = "MyChart";
+            Size = new Size(711, 480);
+            Load += MyChart_Load;
             ResumeLayout(false);
         }
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 
-namespace CTG_Comms
+namespace TestPlot
 {
     public static class Extensions
     {

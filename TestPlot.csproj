@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,4 +14,14 @@
     <PackageReference Include="System.IO.Ports" Version="9.0.7" />
   </ItemGroup>
 
+	<ItemGroup>
+		<None Update=".gitignore" Visible="false" />
+		<None Update=".gitattributes" Visible="false" />
+		<None Update="README.md" Visible="false" />
+		<None Update="LICENSE.txt" Visible="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="GlobalSuppressions.cs" Visible="false" />
+	</ItemGroup>
 </Project>

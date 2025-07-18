@@ -5,7 +5,7 @@ using System.Linq;
 using ScottPlot;
 using SkiaSharp;
 
-namespace CTG_Comms
+namespace Plotter
 {
     public class TimeTickGenerator : ITickGenerator
     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CTG_Comms
+namespace Plotter
 {
     public class BaseFrame
     {
@@ -34,27 +34,6 @@ namespace CTG_Comms
             return (ushort)((data[dateIndex++] << 8) | data[dateIndex++]);
         }
 
-        protected double ReadHR()
-        {
-            if (dateIndex + 1 >= dataLen) { IsMalformed = true; return 0; }
-            int value = ((data[dateIndex++] & 0x07) << 8) | data[dateIndex++];
-            return value / 4.0;
-        }
-        protected double ReadTOCO()
-        {
-            if (dateIndex >= dataLen) { IsMalformed = true; return 0; }
-            return data[dateIndex++] / 2.0;
-        }
-        protected double ReadTemperature()
-        {
-            if (dateIndex >= dataLen) { IsMalformed = true; return 0; }
-            return data[dateIndex++] / 1.0;
-        }
-        protected double ReadSpO2()
-        {
-            if (dateIndex >= dataLen) { IsMalformed = true; return 0; }
-            return data[dateIndex++] / 2.0;
-        }
 
 
         protected void ReadArray(double[] arr, Func<double> reader)

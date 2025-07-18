@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Reflection;
 
-namespace CTG_Comms
+namespace Plotter
 {
     public static class Change
     {
-        static public T To<T>(CTGframe baseFrame) where T : CTGframe, new()
+        static public T To<T>(MyFrame baseFrame) where T : MyFrame, new()
         {
             var cFrame = new T();
             var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
 
-            var currentType = typeof(CTGframe);
+            var currentType = typeof(MyFrame);
             while (currentType != null)
             {
                 foreach (var prop in currentType.GetProperties(flags))
@@ -26,9 +26,9 @@ namespace CTG_Comms
             return cFrame;
         }
 
-        static public CTGframe? SetType(this CTGframe baseFrame) => From(baseFrame);
+        static public MyFrame? SetType(this MyFrame baseFrame) => From(baseFrame);
 
-        static public CTGframe? From(CTGframe baseFrame)
+        static public MyFrame? From(MyFrame baseFrame)
         {
             if (baseFrame?.IsMalformed != false || baseFrame.ReadyToSet == false) return baseFrame;
 

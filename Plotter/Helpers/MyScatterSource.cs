@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using ScottPlot;
 
-namespace CTG_Comms
+namespace Plotter
 {
     public class MyScatterSource : IScatterSource
     {

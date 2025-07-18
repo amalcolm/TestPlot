@@ -4,19 +4,19 @@ using ScottPlot;
 
 using Color = ScottPlot.Color;
 
-namespace CTG_Comms
+namespace Plotter
 {
-    public enum CTG_PlotKind { FHR, MHR, SpO2, TOCO }
+    public enum PlotKind { FHR, MHR, SpO2, TOCO }
 
-    public class CTG_Plot
+    public class MyPlot
     {
         public Color Colour;
-        public CTG_PlotKind Kind;
+        public PlotKind Kind;
         public Signal Plot;
 
         public MySignalSource Data = new();
         public RunningAverage RunningAverage = new(40);
-        public CTG_Plot(Plot ParentPlot, CTG_PlotKind kind, System.Drawing.Color colour)
+        public MyPlot(Plot ParentPlot, PlotKind kind, System.Drawing.Color colour)
         {
             Colour = Color.FromColor(colour);
             Kind = kind;

@@ -5,10 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CTG_Comms
+namespace Plotter
 {
     
-    public class CTGframe : BaseFrame
+    public class MyFrame : BaseFrame
     {
 
         public const int HeaderLen = 2;     // DLE:STX
@@ -18,9 +18,9 @@ namespace CTG_Comms
         public char Kind = '\0';
         
         public bool       ToWrite       { get; set; }
-        public CTGframe?  NextFrame     { get; set; }
+        public MyFrame?  NextFrame     { get; set; }
 
-        public CTGframe() : base()
+        public MyFrame() : base()
         {
             State       = StateKind.Empty;
             IsComplete  = false;
@@ -28,7 +28,7 @@ namespace CTG_Comms
             NextFrame   = null;
         }
 
-        public CTGframe(bool toWrite) : this()
+        public MyFrame(bool toWrite) : this()
         {
             ToWrite     = toWrite;
         

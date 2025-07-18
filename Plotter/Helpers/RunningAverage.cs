@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CTG_Comms
+namespace Plotter
 {
     public class RunningAverage(int windowSize)
     {

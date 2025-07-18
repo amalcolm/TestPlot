@@ -1,7 +1,7 @@
 ﻿using System.IO.Ports;
 using System.Text;
 
-namespace CTG_Comms
+namespace Plotter
 {
     public class TestIO
     {
@@ -20,7 +20,7 @@ namespace CTG_Comms
                 => (packet.Timestamp, packet.Data);
         }
 
-        public delegate void FrameHandler(TestIO testIO, CTGframe frame);
+        public delegate void FrameHandler(TestIO testIO, MyFrame frame);
         public delegate void DataHandler(TestIO testIO, Packet packet);
 
         public event FrameHandler? FrameReceived;
@@ -72,8 +72,8 @@ namespace CTG_Comms
 
         }
 
-        CTGframe InFrame  = new(toWrite: false);
-        CTGframe OutFrame = new(toWrite: true);
+        MyFrame InFrame  = new(toWrite: false);
+        MyFrame OutFrame = new(toWrite: true);
         bool IsContinuous = false;
         int nLastDataTick = 0;
 
@@ -211,7 +211,7 @@ namespace CTG_Comms
                 }
 
                 if (InFrame.IsMalformed || InFrame.IsComplete)
-                    InFrame = InFrame.NextFrame ?? new CTGframe(InFrame.ToWrite);
+                    InFrame = InFrame.NextFrame ?? new MyFrame(InFrame.ToWrite);
             }
         }
 
