@@ -1,13 +1,9 @@
 ﻿using Plotter;
-using System.IO.Ports;
 
 namespace TestPlot
 {
     partial class MainForm
     {
-
-        private long _lastFrame = 0;
-
         private async void cbPorts_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (cbPorts.SelectedItem is string data)
@@ -15,18 +11,10 @@ namespace TestPlot
                 var io = myChart.IO;
                 await io.SetPort(data);
 
-                io.FrameReceived -= Io_OnFrame;
                 io.DataReceived -= Io_OnData;
-                io.Error -= Io_Error;
                 if (io.isOpen)
-                {
-                    io.FrameReceived += Io_OnFrame;
                     io.DataReceived += Io_OnData;
-                    io.Error += Io_Error;
-
-                    io.Write("G");
-                }
-            }
+          }
         }
 
         private void FindSerial()
@@ -54,10 +42,8 @@ namespace TestPlot
                         return;
 
                     case DialogResult.Retry:
-                        var ports = SerialPort.GetPortNames();
+                        var ports = MySerialIO.GetAvailablePorts();
                         if (ports.Length == 0) continue;
-
-                        Array.Sort(ports);
 
                         cbPorts.Items.AddRange(ports);
                         break;
@@ -82,36 +68,32 @@ namespace TestPlot
                 try
                 {
                     // Get initial port list
-                    var initialPorts = SerialPort.GetPortNames();
-                    Array.Sort(initialPorts);
+                    var storedPorts = MySerialIO.GetAvailablePorts();
 
                     // Monitor until first change is detected or cancellation is requested
                     while (!_serialMonitorCts.Token.IsCancellationRequested)
                     {
                         await Task.Delay(1000, _serialMonitorCts.Token);
 
-                        var currentPorts = SerialPort.GetPortNames();
-                        Array.Sort(currentPorts);
-
+                        var currentPorts = MySerialIO.GetAvailablePorts();
+               
                         // If ports have changed, process the change and exit the monitoring loop
-                        if (initialPorts.SequenceEqual(currentPorts) == false)
+                        if (storedPorts.SequenceEqual(currentPorts) == false)
                         {
-                            var availablePorts = currentPorts
-                                .OrderBy(p => p)
-                                .ToArray();
-
-                            // If no valid ports are found, restart monitoring
-                            if (availablePorts.Length == 0)
-                            {
-                                initialPorts = currentPorts;
-                                continue;
-                            }
-
+                           storedPorts = currentPorts;
+                         
                             // Update UI on UI thread
                             this.Invoker(() =>
                             {
                                 cbPorts.Items.Clear();
-                                cbPorts.Items.AddRange(availablePorts);
+                                if (currentPorts.Length == 0)
+                                {
+                                    cbPorts.Text = "No Serial Ports Found";
+                                    cbPorts.SelectedIndex = -1;
+                                    return;
+                                }
+
+                                cbPorts.Items.AddRange(currentPorts);
                                 cbPorts.SelectedIndex = 0;
                             });
 
@@ -127,65 +109,9 @@ namespace TestPlot
             });
         }
 
-        private void Io_Error(object? sender, string Message)
+        private void Io_OnData(MySerialIO io, MySerialIO.Packet packet)
         {
-            _LOG_ERROR(Message);
-
-            
-            string Note = string.Empty;
-
-
-            this.Invoker(() =>
-            {
-
-                tbComms.Text = Message; _oldText = string.Empty;
-
-                if (MessageBox.Show(Note + Message, "Data Stream Error",
-                                    MessageBoxButtons.OKCancel,
-                                    MessageBoxIcon.Error) == DialogResult.Cancel)
-                {
-                    this.Close();
-                    return;
-                }
-
-                FindSerial();
-            });
-        }
-
-        Color _oldColor = Color.Empty;
-
-        private string _oldText = string.Empty;
-
-        private void Io_OnFrame(TestIO arg1, MyFrame frame)
-        {
-            _lastFrame = DateTime.Now.Ticks;
-
-            if (isClosing) return;
-
-            string output = "[unknown]";
-
-            if (frame is C_Frame data)
-            {
-                // null output and reset colour
-                output = string.Empty; if (_oldColor != Color.Empty)  { this.BackColor = _oldColor; _oldColor = Color.Empty; }
-
-            }
-
-            if (output == "[unknown]")
-                output = frame.ToString();
-
-            if (output != _oldText)
-                try
-                {
-                    _oldText = output;
-                    this.Invoker(() => tbComms.Text = output);
-                }
-                catch { _oldText = string.Empty; }
-        }
-
-
-        private void Io_OnData(TestIO testIO, TestIO.Packet packet)
-        {
+            System.Diagnostics.Debug.WriteLine(packet.Data.Length);
         }
 
     }

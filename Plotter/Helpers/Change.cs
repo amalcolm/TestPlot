@@ -36,7 +36,7 @@ namespace Plotter
             {
                 'C' => Change.To< C_Frame>(baseFrame),
                 'T' => Change.To< Test_Frame>(baseFrame),
-                _ => throw new Exception(TestIO.ERROR_FRAME_NOT_RECOGNISED)
+                _ => throw new Exception(MySerialIO.ERROR_FRAME_NOT_RECOGNISED)
             };
             
 

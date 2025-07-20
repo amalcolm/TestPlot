@@ -28,36 +28,47 @@
         /// </summary>
         private void InitializeComponent()
         {
-            formsPlot1 = new ScottPlot.WinForms.FormsPlot();
+            formsPlot = new ScottPlot.WinForms.FormsPlot();
+            formView = new Plotter.MyFormView();
             SuspendLayout();
             // 
-            // formsPlot1
+            // formsPlot
             // 
-            formsPlot1.DisplayScale = 1F;
-            formsPlot1.Dock = DockStyle.Fill;
-            formsPlot1.Location = new Point(0, 0);
-            formsPlot1.Name = "formsPlot1";
-            formsPlot1.Size = new Size(711, 480);
-            formsPlot1.TabIndex = 0;
-            formsPlot1.Parent = this;
-            formsPlot1.BackColor = Color.Gainsboro;
-
-
+            formsPlot.BackColor = Color.Gainsboro;
+            formsPlot.DisplayScale = 1F;
+            formsPlot.Dock = DockStyle.Fill;
+            formsPlot.Location = new Point(0, 0);
+            formsPlot.Name = "formsPlot1";
+            formsPlot.Size = new Size(734, 480);
+            formsPlot.TabIndex = 0;
+            // 
+            // formView
+            // 
+            formView.BackColor = Color.Gainsboro;
+            formView.Chart = null;
+            formView.Dock = DockStyle.Right;
+            formView.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            formView.Location = new Point(734, 0);
+            formView.Margin = new Padding(5);
+            formView.Name = "myFormView1";
+            formView.Size = new Size(260, 480);
+            formView.TabIndex = 1;
             // 
             // MyChart
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.Transparent;
-            Controls.Add(formsPlot1);
+            AutoScaleMode = AutoScaleMode.None;
+            BackColor = Color.Gainsboro;
+            Controls.Add(formsPlot);
+            Controls.Add(formView);
             Name = "MyChart";
-            Size = new Size(711, 480);
+            Size = new Size(994, 480);
             Load += MyChart_Load;
             ResumeLayout(false);
         }
 
         #endregion
 
-        private ScottPlot.WinForms.FormsPlot formsPlot1;
+        private ScottPlot.WinForms.FormsPlot formsPlot;
+        private Plotter.MyFormView formView;
     }
 }

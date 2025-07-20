@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Plotter
+﻿namespace Plotter
 {
     public class BaseFrame
     {

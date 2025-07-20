@@ -30,55 +30,59 @@ namespace TestPlot
         private void InitializeComponent()
         {
             cbPorts = new ComboBox();
-            tbComms = new TextBox();
-            myChart1 = new Plotter.MyChart();
+            myChart = new Plotter.MyChart();
+            labError = new Label();
             SuspendLayout();
             // 
             // cbPorts
             // 
+            cbPorts.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             cbPorts.FormattingEnabled = true;
             cbPorts.Location = new Point(31, 12);
             cbPorts.Name = "cbPorts";
-            cbPorts.Size = new Size(121, 23);
+            cbPorts.Size = new Size(150, 33);
             cbPorts.TabIndex = 1;
+            cbPorts.SelectedIndexChanged += cbPorts_SelectedIndexChanged;
             // 
-            // tbComms
+            // myChart
             // 
-            tbComms.Location = new Point(1368, 56);
-            tbComms.Multiline = true;
-            tbComms.Name = "tbComms";
-            tbComms.Size = new Size(340, 737);
-            tbComms.TabIndex = 2;
+            myChart.BackColor = Color.Transparent;
+            myChart.IO = null;
+            myChart.IsWarning = false;
+            myChart.Location = new Point(31, 51);
+            myChart.Name = "myChart";
+            myChart.Size = new Size(1657, 773);
+            myChart.TabIndex = 3;
             // 
-            // myChart1
+            // labError
             // 
-            myChart1.BackColor = Color.Transparent;
-            myChart1.IO = null;
-            myChart1.IsWarning = false;
-            myChart1.Location = new Point(36, 128);
-            myChart1.Name = "myChart1";
-            myChart1.Size = new Size(1200, 642);
-            myChart1.TabIndex = 3;
+            labError.Font = new Font("Segoe UI", 16F);
+            labError.ForeColor = Color.Firebrick;
+            labError.Location = new Point(261, 12);
+            labError.Name = "labError";
+            labError.Size = new Size(999, 33);
+            labError.TabIndex = 5;
+            labError.Text = "Plotter v1.00";
+            labError.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // MainForm
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
+            AutoScaleMode = AutoScaleMode.None;
             ClientSize = new Size(1720, 836);
-            Controls.Add(myChart1);
-            Controls.Add(tbComms);
+            Controls.Add(labError);
+            Controls.Add(myChart);
             Controls.Add(cbPorts);
+            DoubleBuffered = true;
             Name = "MainForm";
             Text = "MainForm";
             FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
         private ComboBox cbPorts;
-        private TextBox tbComms;
-        private Plotter.MyChart myChart1;
+        private Plotter.MyChart myChart;
+        private Label labError;
     }
 }

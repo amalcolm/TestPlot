@@ -1,10 +1,16 @@
-﻿using System.IO.Ports;
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using System.IO.Ports;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Plotter
 {
-    public class TestIO
+    public class MySerialIO
     {
+        public enum IOMode { Raw, Text, Frames }
+        public IOMode Mode { get; set; } = IOMode.Raw;
+
         public const string ERROR_TIMEOUT = "!Data from CTG has stopped";
         public const string ERROR_DISCONNECTED = "!CTG has disconnected";
         public const string ERROR_FRAME_NOT_RECOGNISED = "!Frame not recognised";
@@ -20,9 +26,11 @@ namespace Plotter
                 => (packet.Timestamp, packet.Data);
         }
 
-        public delegate void FrameHandler(TestIO testIO, MyFrame frame);
-        public delegate void DataHandler(TestIO testIO, Packet packet);
+        public delegate void TextHandler(MySerialIO io, string text);
+        public delegate void FrameHandler(MySerialIO io, MyFrame frame);
+        public delegate void DataHandler(MySerialIO io, Packet packet);
 
+        public event TextHandler? TextReceived;
         public event FrameHandler? FrameReceived;
         public event DataHandler? DataReceived;
 
@@ -33,6 +41,15 @@ namespace Plotter
 
         public bool isOpen { get; private set; } = false;
         public bool FindngStart = true;
+
+        
+        public MySerialIO()
+        {
+            if (SocketWatcher.IO != null) throw new InvalidOperationException("SocketWatcher.IO is already set. Please close the existing connection first.");
+
+            SocketWatcher.IO = this;
+            SocketWatcher.StartListening();
+        }
 
         public async Task<bool> SetPort(string port)
         {
@@ -51,16 +68,7 @@ namespace Plotter
                     ReadTimeout  = 1500
                 };
 
-                SP.Open();
-
-                isOpen = SP.IsOpen;
-
-                if (isOpen)
-                {
-                    readCancellation = new();
-                    _ = StartReading(readCancellation.Token);
-                }
-
+                Connect();
 
                 return isOpen;
             }
@@ -72,16 +80,34 @@ namespace Plotter
 
         }
 
+        public void Connect()
+        {
+            if (isOpen) return;
+
+            SP.Open();
+
+            isOpen = SP.IsOpen;
+
+            if (isOpen)
+            {
+                readCancellation = new();
+                _ = StartReading(readCancellation.Token);
+            }
+        }
+
+
         MyFrame InFrame  = new(toWrite: false);
         MyFrame OutFrame = new(toWrite: true);
         bool IsContinuous = false;
         int nLastDataTick = 0;
 
-
         private async Task StartReading(CancellationToken cancellationToken)
         {
-            // discard buffered data
+            Debug.WriteLine("Reading task started.");
+
+            // discard buffered data and write handshake
             _ = SP.ReadExisting();
+            SP.Write(HS_Plotter, 0, HS_Plotter.Length);
 
             nLastDataTick = Environment.TickCount;
             DateTime? packetStartTime = null;
@@ -140,6 +166,10 @@ namespace Plotter
                     // Wait one system tick ; '1' being less than the tick length
                     await Task.Delay(1, cancellationToken);
                 }
+                catch (TaskCanceledException)
+                {
+                    break;
+                }
                 catch (Exception ex)
                 {
                     var header = ex.Message.StartsWith("!") ? string.Empty : $"!Error reading from CTG: ";
@@ -166,16 +196,95 @@ namespace Plotter
                 }
             }
 
-            isOpen = (SP == null) ? false : SP.IsOpen;
+            isOpen = SP != null && SP.IsOpen;
     
             if (cancellationToken.IsCancellationRequested == false)
                 Error?.Invoke(this, ERROR_DISCONNECTED);
+
+            Debug.WriteLine("Reading task exitted.");
+
         }
+
+        private int handshakeMatchIndex = 0;
+        private int consecutiveTextPackets = 0;
+        private static readonly int TEXT_PROBE_THRESHOLD = 0;
+        private static readonly byte[] HS_fNIRS_Probe = { 0x10, 0x02, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00 };
+        private static readonly byte[] HS_Plotter     = { 0x10, 0x02, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x01 };
+        
 
         private void ProcessData(DateTime timestamp, byte[] bytes)
         {
+            switch (Mode)
+            {
+                case IOMode.Text  : ProcessTextData(bytes); return;
+                case IOMode.Frames: ProcessFrameData(bytes); return;
+            }
+
             DataReceived?.Invoke(this, (timestamp, bytes));
 
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                if (bytes[i] == HS_fNIRS_Probe[handshakeMatchIndex])
+                {
+                    if (++handshakeMatchIndex == HS_fNIRS_Probe.Length)
+                    {
+                        Mode = IOMode.Frames;
+                        handshakeMatchIndex = 0;
+                        return;
+                    }
+                }
+                else
+                {
+                    if (handshakeMatchIndex > 0)
+                    {
+                        handshakeMatchIndex = 0;
+                        i--;
+                    }
+                }
+            }
+
+            if (Mode == IOMode.Raw)
+            {
+                bool looksLikeText = bytes.All(b => b == '\n' || b == '\r' || b == '\t' || (b >= 32 && b < 127));
+
+                if (looksLikeText)
+                    consecutiveTextPackets++;
+                else
+                    consecutiveTextPackets = 0;
+
+                if (consecutiveTextPackets >= TEXT_PROBE_THRESHOLD)
+                {
+                    Mode = IOMode.Text;
+                    ProcessData(timestamp, bytes);
+                }
+            }
+        }
+
+        // Use a List<byte> as a class-level buffer.
+        private readonly List<byte> byteBuffer = [];
+
+        private void ProcessTextData(byte[] bytes)
+        {
+            byteBuffer.AddRange(bytes);
+
+            while (true)
+            {
+                int newlineIndex = byteBuffer.IndexOf((byte)'\n');
+
+                if (newlineIndex < 0) break;
+
+                int lineLength = newlineIndex;
+                if (lineLength > 0 && byteBuffer[lineLength - 1] == (byte)'\r')
+                    lineLength--;
+
+                TextReceived?.Invoke(this, Encoding.UTF8.GetString([..byteBuffer.GetRange(0, lineLength)]));
+        
+                byteBuffer.RemoveRange(0, newlineIndex + 1);
+            }
+        }
+
+        public void ProcessFrameData(byte[] bytes)
+        {
             if (FindngStart)
                 for (int i = 0; i < bytes.Length - 1; i++)
                     if (bytes[i] == BaseFrame.DLE && bytes[i + 1] == BaseFrame.STX)
@@ -185,8 +294,7 @@ namespace Plotter
                         break;
                     }
 
-            if (FindngStart) return;
-            
+
             foreach (var b in bytes)
             {
                 InFrame.Add(b);
@@ -266,5 +374,39 @@ namespace Plotter
             }
         }
 
+        public static string[] GetAvailablePorts()
+        {
+            return [..SerialPort.GetPortNames().OrderBy(port => port, new NaturalStringComparer())];
+        }
+
+    }
+
+    [ToolboxItem(false)]
+    public partial class NaturalStringComparer : IComparer<string>
+    {
+        public int Compare(string? x, string? y)
+        {
+            var regex = Regex_FindNumber();
+
+            var matchX = regex.Match(x ?? string.Empty);
+            var matchY = regex.Match(y ?? string.Empty);
+
+            if (matchX.Success && matchY.Success)
+            {
+                if (int.TryParse(matchX.Value, out int numX) && int.TryParse(matchY.Value, out int numY))
+                {
+                    int numComparison = numX.CompareTo(numY);
+                    if (numComparison != 0)
+                    {
+                        return numComparison;
+                    }
+                }
+            }
+
+            // Fallback to regular string comparison if numbers are the same or not found
+            return string.Compare(x, y, StringComparison.Ordinal);
+        }
+
+        [GeneratedRegex("(\\d+)")] private static partial Regex Regex_FindNumber();
     }
 }

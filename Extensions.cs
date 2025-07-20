@@ -1,5 +1,4 @@
-﻿using System;
-using System.Windows.Forms;
+﻿using System.Runtime.InteropServices;
 
 namespace TestPlot
 {
@@ -18,5 +17,23 @@ namespace TestPlot
         {
             label.Invoker(() => label.Text = text);
         }
+
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern int SendMessage(IntPtr hWnd, int wMsg, bool wParam, int lParam);
+        private const int WM_SETREDRAW = 0x000B;
+
+        public static void SuspendDrawing(this Control control)
+        {
+            SendMessage(control.Handle, WM_SETREDRAW, false, 0);
+        }
+
+        public static void ResumeDrawing(this Control control, bool refresh = true)
+        {
+            SendMessage(control.Handle, WM_SETREDRAW, true, 0);
+
+            if (refresh)
+                control.Refresh();
+        }
+
     }
 }

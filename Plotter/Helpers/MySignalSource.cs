@@ -6,13 +6,13 @@ namespace Plotter
 {
     public class MySignalSource : ISignalSource
     {
-        const int MaximumValues = 80;
+//        const int MaximumValues = 1200;
         
         private readonly List<double> values = [];
         private double minValue = double.MaxValue;
         private double maxValue = double.MinValue;
 
-        public double Period { get; set; } = 0.25;  // Time between samples in seconds
+        public double Period { get; set; } = 0.0056;  // Time between samples in seconds
         public double XOffset { get; set; } = 0;
         public double YOffset { get; set; } = 0;
         public double YScale { get; set; } = 1.0;
