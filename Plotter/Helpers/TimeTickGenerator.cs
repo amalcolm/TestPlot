@@ -62,7 +62,10 @@ namespace Plotter
                 }
             }
 
-            _ticks = [.. ticks.OrderBy(x => x.Position)];
+            // Sort the list in-place
+            ticks.Sort((a, b) => a.Position.CompareTo(b.Position));
+
+            _ticks = [.. ticks];
         }
     }
 }

@@ -9,7 +9,7 @@ namespace Plotter
     public class MyTextbox : RichTextBox
     {
         private static readonly Timer _updateTimer = new();
-        private static readonly HashSet<MyTextbox> _dirtyControls = [];
+        private static HashSet<MyTextbox> _dirtyControls = [];
         private string _bufferedText = string.Empty;
         private bool _isUpdatingFromTimer = false;
 
@@ -49,16 +49,20 @@ namespace Plotter
         {
             if (_dirtyControls.Count == 0) return;
 
-            List<MyTextbox> controlsToUpdate;
+            HashSet<MyTextbox> controlsToUpdate;
             lock (_dirtyControls)
             {
-                controlsToUpdate = [.. _dirtyControls];
-                _dirtyControls.Clear();
+                // Atomically swap the set with a new empty one
+                controlsToUpdate = _dirtyControls;
+                _dirtyControls = [];
             }
 
+            // Now iterate over the swapped-out set
             foreach (var tb in controlsToUpdate)
+            {
                 if (!tb.IsDisposed)
                     tb.UpdateText(tb._bufferedText);
+            }
         }
 
         private void UpdateText(string text)

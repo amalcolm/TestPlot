@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Color = System.Drawing.Color;
+using Timer = System.Windows.Forms.Timer;
 
 using ScottPlot;
 using TestPlot;
@@ -12,6 +13,7 @@ namespace Plotter
         private readonly Plot? plot;
 
         private readonly Dictionary<int, MyPlot> dPlots = [];
+        private readonly Timer tiRender = new() { Interval = 15 };
 
         public MyChart()
         {
@@ -20,7 +22,22 @@ namespace Plotter
 
             plot = formsPlot.Plot;
             plot.DataBackground.Color = ScottPlot.Color.FromColor(formsPlot.BackColor);
-            plot.Axes.Bottom.TickGenerator = new TimeTickGenerator();
+//            plot.Axes.Bottom.TickGenerator = new TimeTickGenerator();
+
+            tiRender.Tick += TiRender_Tick;
+        }
+
+        private void TiRender_Tick(object? sender, EventArgs e)
+        {
+            if (plot == null || !okayToRender || this.IsDisposed)
+            {
+                tiRender.Stop();
+                return;
+            }
+
+            double time = frameTimer.Elapsed.TotalSeconds + offsetTime;
+            plot.Axes.SetLimitsX(time - 9, time + 1);
+            formsPlot.Refresh(); // No Invoke needed, as the timer runs on the UI thread
         }
 
         protected override void OnLoad(EventArgs e)
@@ -40,7 +57,7 @@ namespace Plotter
                 if (_io != null)
                 {
                     _io.FrameReceived -= IO_FrameReceived;
-                    _io.TextReceived -= IO_TextReceived;
+                    _io.TextReceived  -= IO_TextReceived;
                 }
 
                 _io = value;
@@ -48,7 +65,7 @@ namespace Plotter
                 if (_io != null)
                 {
                     _io.FrameReceived += IO_FrameReceived;
-                    _io.TextReceived += IO_TextReceived;
+                    _io.TextReceived  += IO_TextReceived;
                 }
             }
         }
@@ -78,7 +95,7 @@ namespace Plotter
                 offsetTime = nPoints;
                 frameTimer.Start();
                 _ = nPoints;
-                _ = StartAnimation();
+                tiRender.Start();
             }
         }
 
@@ -101,25 +118,25 @@ namespace Plotter
 
         List<Color> plotColours = [
             Color.FromArgb(0x4E, 0x79, 0xA7), // Muted Blue
-        Color.FromArgb(0xF2, 0x8E, 0x2B), // Orange
-        Color.FromArgb(0xE1, 0x57, 0x59), // Red
-        Color.FromArgb(0x76, 0xB7, 0xB2), // Teal
-        Color.FromArgb(0x59, 0xA1, 0x4F), // Green
-        Color.FromArgb(0xED, 0xC9, 0x48), // Yellow
-        Color.FromArgb(0xB0, 0x7A, 0xA1), // Purple
-        Color.FromArgb(0xFF, 0x9D, 0xA7), // Pink
-        Color.FromArgb(0x9C, 0x75, 0x5F), // Brown
-        Color.FromArgb(0xBA, 0xB0, 0xAC), // Grey
-        Color.FromArgb(0x1F, 0x77, 0xB4), // Bright Blue
-        Color.FromArgb(0xFF, 0x7F, 0x0E), // Bright Orange
-        Color.FromArgb(0x2C, 0xA0, 0x2C), // Bright Green
-        Color.FromArgb(0xD6, 0x27, 0x28), // Bright Red
-        Color.FromArgb(0x94, 0x67, 0xBD), // Bright Purple
-        Color.FromArgb(0x8C, 0x56, 0x4B), // Dark Brown
-        Color.FromArgb(0xE3, 0x77, 0xC2), // Bright Pink
-        Color.FromArgb(0x7F, 0x7F, 0x7F), // Medium Grey
-        Color.FromArgb(0xBC, 0xBD, 0x22), // Olive Green
-        Color.FromArgb(0x17, 0xBE, 0xCF)  // Cyan
+            Color.FromArgb(0xF2, 0x8E, 0x2B), // Orange
+            Color.FromArgb(0xE1, 0x57, 0x59), // Red
+            Color.FromArgb(0x76, 0xB7, 0xB2), // Teal
+            Color.FromArgb(0x59, 0xA1, 0x4F), // Green
+            Color.FromArgb(0xED, 0xC9, 0x48), // Yellow
+            Color.FromArgb(0xB0, 0x7A, 0xA1), // Purple
+            Color.FromArgb(0xFF, 0x9D, 0xA7), // Pink
+            Color.FromArgb(0x9C, 0x75, 0x5F), // Brown
+            Color.FromArgb(0xBA, 0xB0, 0xAC), // Grey
+            Color.FromArgb(0x1F, 0x77, 0xB4), // Bright Blue
+            Color.FromArgb(0xFF, 0x7F, 0x0E), // Bright Orange
+            Color.FromArgb(0x2C, 0xA0, 0x2C), // Bright Green
+            Color.FromArgb(0xD6, 0x27, 0x28), // Bright Red
+            Color.FromArgb(0x94, 0x67, 0xBD), // Bright Purple
+            Color.FromArgb(0x8C, 0x56, 0x4B), // Dark Brown
+            Color.FromArgb(0xE3, 0x77, 0xC2), // Bright Pink
+            Color.FromArgb(0x7F, 0x7F, 0x7F), // Medium Grey
+            Color.FromArgb(0xBC, 0xBD, 0x22), // Olive Green
+            Color.FromArgb(0x17, 0xBE, 0xCF)  // Cyan
         ];
 
 
@@ -138,7 +155,7 @@ namespace Plotter
 
 
         private MySerialIO _io = default!;
-        private readonly System.Windows.Forms.Timer ti = new() { Interval = 1000 };
+        private readonly Timer ti = new() { Interval = 1000 };
         private void MyChart_Load(object sender, EventArgs e)
         {
             ti.Tick += (s, e) => AddData(new C_Frame());
@@ -154,6 +171,7 @@ namespace Plotter
         {
             _cts.Cancel();
             okayToRender = false;
+            tiRender.Stop();
             base.OnHandleDestroyed(e);
         }
 

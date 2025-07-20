@@ -1,8 +1,10 @@
-﻿using System.ComponentModel;
+﻿using System.Buffers;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Ports;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
 
 namespace Plotter
 {
@@ -113,6 +115,7 @@ namespace Plotter
             DateTime? packetStartTime = null;
             List<byte> currentPacket = [];
             FindngStart = true;
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(4096);
 
             while (SP?.IsOpen == true && !cancellationToken.IsCancellationRequested && isOpen)
             {
@@ -124,11 +127,13 @@ namespace Plotter
                     {
                         packetStartTime ??= DateTime.Now;
 
-                        byte[] tempBytes = new byte[size];
-                        int bytesRead = SP.Read(tempBytes, 0, size);
-                        currentPacket.AddRange(tempBytes.Take(bytesRead));
+                        // Make sure we don't read more than our buffer can hold
+                        int bytesToRead = Math.Min(size, rentedBuffer.Length);
+                        int bytesRead = SP.Read(rentedBuffer, 0, bytesToRead);
 
-                        // No need for a delay here - just loop immediately
+                        // Add the segment of the buffer that contains new data
+                        currentPacket.AddRange(rentedBuffer.Take(bytesRead)); // Still allocates, but let's fix the next part first
+
                         nLastDataTick = Environment.TickCount;
                         continue;
                     }
@@ -193,6 +198,10 @@ namespace Plotter
                         SP.Close();
                  
                     break;
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
                 }
             }
 
@@ -261,6 +270,7 @@ namespace Plotter
         }
 
         // Use a List<byte> as a class-level buffer.
+        
         private readonly List<byte> byteBuffer = [];
 
         private void ProcessTextData(byte[] bytes)
@@ -269,20 +279,29 @@ namespace Plotter
 
             while (true)
             {
-                int newlineIndex = byteBuffer.IndexOf((byte)'\n');
+                // Get a Span that views the list's memory directly. No copy.
+                var bufferSpan = CollectionsMarshal.AsSpan(byteBuffer);
+                int newlineIndex = bufferSpan.IndexOf((byte)'\n');
 
                 if (newlineIndex < 0) break;
 
                 int lineLength = newlineIndex;
-                if (lineLength > 0 && byteBuffer[lineLength - 1] == (byte)'\r')
+                if (lineLength > 0 && bufferSpan[lineLength - 1] == (byte)'\r')
+                {
                     lineLength--;
+                }
 
-                TextReceived?.Invoke(this, Encoding.UTF8.GetString([..byteBuffer.GetRange(0, lineLength)]));
-        
+                // Get a slice of the span representing just the line. No copy.
+                var lineSpan = bufferSpan.Slice(0, lineLength);
+
+                // Directly create a string from the span.
+                // This is the *only allocation* left in the loop.
+                TextReceived?.Invoke(this, Encoding.UTF8.GetString(lineSpan));
+
+                // Efficiently remove the processed part of the list.
                 byteBuffer.RemoveRange(0, newlineIndex + 1);
             }
         }
-
         public void ProcessFrameData(byte[] bytes)
         {
             if (FindngStart)
