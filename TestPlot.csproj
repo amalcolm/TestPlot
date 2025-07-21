@@ -24,4 +24,9 @@
 	<ItemGroup>
 		<Compile Update="GlobalSuppressions.cs" Visible="false" />
 	</ItemGroup>
+
+	<PropertyGroup>
+		<NoWarn>$(NoWarn);NU1701</NoWarn>
+	</PropertyGroup>
+	
 </Project>

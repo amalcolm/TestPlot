@@ -32,6 +32,7 @@ namespace TestPlot
             cbPorts = new ComboBox();
             myChart = new Plotter.MyChart();
             labError = new Label();
+            myPlotter1 = new Plotter.MyPlotter();
             SuspendLayout();
             // 
             // cbPorts
@@ -65,10 +66,18 @@ namespace TestPlot
             labError.Text = "Plotter v1.00";
             labError.TextAlign = ContentAlignment.MiddleCenter;
             // 
+            // myPlotter1
+            // 
+            myPlotter1.Location = new Point(38, 868);
+            myPlotter1.Name = "myPlotter1";
+            myPlotter1.Size = new Size(1070, 498);
+            myPlotter1.TabIndex = 6;
+            // 
             // MainForm
             // 
             AutoScaleMode = AutoScaleMode.None;
-            ClientSize = new Size(1720, 836);
+            ClientSize = new Size(1720, 1463);
+            Controls.Add(myPlotter1);
             Controls.Add(labError);
             Controls.Add(myChart);
             Controls.Add(cbPorts);
@@ -84,5 +93,6 @@ namespace TestPlot
         private ComboBox cbPorts;
         private Plotter.MyChart myChart;
         private Label labError;
+        private Plotter.MyPlotter myPlotter1;
     }
 }

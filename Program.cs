@@ -10,7 +10,9 @@ namespace TestPlot
         static void Main()
         {
             ApplicationConfiguration.Initialize();
+
             IsRunning = true;
+
             Application.Run(new MainForm());
         }
     }

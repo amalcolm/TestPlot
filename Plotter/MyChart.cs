@@ -37,7 +37,6 @@ namespace Plotter
 
             double time = frameTimer.Elapsed.TotalSeconds + offsetTime;
             plot.Axes.SetLimitsX(time - 9, time + 1);
-            formsPlot.Refresh(); // No Invoke needed, as the timer runs on the UI thread
         }
 
         protected override void OnLoad(EventArgs e)
