@@ -10,7 +10,7 @@ namespace Plotter
 
     public partial class MyChart : UserControl
     {
-        private readonly Plot? plot;
+/*        private readonly Plot? plot;
 
         private readonly Dictionary<int, MyPlot> dPlots = [];
         private readonly Timer tiRender = new() { Interval = 15 };
@@ -223,5 +223,5 @@ namespace Plotter
                     plot.DataBackground.Color = (value) ? ColourWarning : ColourNormal;
             }
         }
-    }
+*/    }
 }

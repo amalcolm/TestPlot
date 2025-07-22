@@ -62,7 +62,7 @@
             Controls.Add(formView);
             Name = "MyChart";
             Size = new Size(994, 480);
-            Load += MyChart_Load;
+//            Load += MyChart_Load;
             ResumeLayout(false);
         }
 

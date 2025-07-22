@@ -48,8 +48,6 @@ namespace TestPlot
             // myChart
             // 
             myChart.BackColor = Color.Transparent;
-            myChart.IO = null;
-            myChart.IsWarning = false;
             myChart.Location = new Point(31, 51);
             myChart.Name = "myChart";
             myChart.Size = new Size(1657, 773);

@@ -83,7 +83,7 @@ namespace Plotter
 
                         if (double.TryParse(valueSpan, out double v) && Chart != null)
                         {
-                            Chart.AddData(fieldName, fieldHash, v);
+//                            Chart.AddData(fieldName, fieldHash, v);
                         }
                     }
                     // ----------------------------------------------------

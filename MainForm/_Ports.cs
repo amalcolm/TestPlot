@@ -4,16 +4,16 @@ namespace TestPlot
 {
     partial class MainForm
     {
-        private async void cbPorts_SelectedIndexChanged(object sender, EventArgs e)
+        private void cbPorts_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (cbPorts.SelectedItem is string data)
             {
-                var io = myChart.IO;
-                await io.SetPort(data);
+//                var io = myChart.IO;
+//                await io.SetPort(data);
 
-                io.DataReceived -= Io_OnData;
-                if (io.isOpen)
-                    io.DataReceived += Io_OnData;
+//                io.DataReceived -= Io_OnData;
+//                if (io.isOpen)
+//                    io.DataReceived += Io_OnData;
           }
         }
 
