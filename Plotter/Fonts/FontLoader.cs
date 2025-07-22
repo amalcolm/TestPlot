@@ -10,6 +10,7 @@ namespace Plotter
         public static FontFile Load(string filePath)
         {
             var fontFile = new FontFile();
+            if (!filePath.Contains('\\')) filePath = $@"Resources\Fonts\{filePath}";
             var lines = File.ReadLines(filePath);
 
             foreach (var line in lines)

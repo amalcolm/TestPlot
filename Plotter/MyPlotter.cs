@@ -27,7 +27,7 @@ namespace Plotter
                 sin.Add(Math.Sin(time));
                 cos.Add(Math.Cos(time));
             
-            }, null, 0, 10); // Update every 100 ms
+            }, null, 0, 10);
         }
 
         
@@ -38,7 +38,7 @@ namespace Plotter
         protected override void DrawPlots()
         {
             int colorLocation = GL.GetUniformLocation(_plotShaderProgram, "uColor");
-
+            ViewPort = new(-1, 1000, 1, -1); // Set viewport to full window
             foreach (var plot in Plots.Values)
             {
                 GL.Uniform4(colorLocation, plot.Colour );

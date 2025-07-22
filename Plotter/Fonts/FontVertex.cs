@@ -44,6 +44,7 @@ namespace Plotter
                 vertices.Add(new FontVertex { Position = new Vector2(x + width, y         ),   /* Top   -right */  TexCoord = new Vector2(u2, v1) });
 
                 // Move cursor for the next character
+                if (i + 1 >= text.Length) break; // Avoid out of bounds
                 cursor.X += fontChar.XAdvance + font.GetKerning(c, text[i + 1]);
             }
 

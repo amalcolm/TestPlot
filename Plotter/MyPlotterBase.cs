@@ -1,6 +1,6 @@
 ﻿using OpenTK;
 using OpenTK.Graphics.OpenGL4;
-using Timer = System.Threading.Timer;
+using Timer = System.Windows.Forms.Timer;
 
 namespace Plotter
 {
@@ -29,13 +29,8 @@ namespace Plotter
             _glControl.Load += OnLoad;
             _glControl.Resize += OnResize;
 
-            // Setup the active rendering loop
-            _renderTimer = new(
-                callback: Render,
-                state: null,
-                dueTime: 1000,
-                period: 16
-            );
+            _renderTimer = new Timer() { Interval = 15 };
+            _renderTimer.Tick += Render;
         }
 
         /// <summary>
@@ -50,8 +45,9 @@ namespace Plotter
 
             _plotShaderProgram = ShaderManager.Get("plot");
             _textShaderProgram = ShaderManager.Get("font");
-
+            Init();
             _isLoaded = true;  // allow rendering to start
+            _renderTimer.Start();
         }
 
         private void OnResize(object? sender, EventArgs e)
@@ -64,7 +60,7 @@ namespace Plotter
         /// <summary>
         /// The main render loop. Renders all registered plots.
         /// </summary>
-        private void Render(object? state)
+        private void Render(object? sender, EventArgs e)
         {
             if (!IsLoaded || IsDisposed) return;
 
@@ -92,13 +88,7 @@ namespace Plotter
         protected abstract void Init();
         protected abstract void DrawPlots();
         protected abstract void DrawText();
-        protected abstract void ShutDown();
-
-        private void InitializeComponent()
-        {
-
-        }
-
+        
         // --- Resource Management ---
 
         protected override void Dispose(bool disposing)
