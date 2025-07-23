@@ -32,7 +32,7 @@
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="Resources\Shaders\font.frag">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="Resources\Shaders\font.vert">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

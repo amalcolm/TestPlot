@@ -24,8 +24,8 @@ namespace Plotter
                     continue;
                 }
 
-                float x      = fontChar.XOffset + cursor.X;
-                float y      = fontChar.YOffset + cursor.Y;
+                float x      = cursor.X + fontChar.XOffset;
+                float y      = cursor.Y - fontChar.YOffset - fontChar.Height + font.Base;
                 float width  = fontChar.Width ;
                 float height = fontChar.Height;
 
@@ -36,12 +36,12 @@ namespace Plotter
                 float v2 = (fontChar.Y + height) / texHeight;
 
                 // Add six vertices for two triangles (quad) for this character
-                vertices.Add(new FontVertex { Position = new Vector2(x        , y         ),   /* Top   -left  */  TexCoord = new Vector2(u1, v1) });
-                vertices.Add(new FontVertex { Position = new Vector2(x        , y + height),   /* Bottom-left  */  TexCoord = new Vector2(u1, v2) });
-                vertices.Add(new FontVertex { Position = new Vector2(x + width, y + height),   /* Bottom-right */  TexCoord = new Vector2(u2, v2) });
-                vertices.Add(new FontVertex { Position = new Vector2(x        , y         ),   /* Top   -left */   TexCoord = new Vector2(u1, v1) });
-                vertices.Add(new FontVertex { Position = new Vector2(x + width, y + height),   /* Bottom-right */  TexCoord = new Vector2(u2, v2) });
-                vertices.Add(new FontVertex { Position = new Vector2(x + width, y         ),   /* Top   -right */  TexCoord = new Vector2(u2, v1) });
+                vertices.Add(new FontVertex { Position = new Vector2(x        , y + height),   /* Top   -left  */  TexCoord = new Vector2(u1, v1) });
+                vertices.Add(new FontVertex { Position = new Vector2(x + width, y         ),   /* Bottom-right */  TexCoord = new Vector2(u2, v2) });
+                vertices.Add(new FontVertex { Position = new Vector2(x        , y         ),   /* Bottom-left  */  TexCoord = new Vector2(u1, v2) });
+                vertices.Add(new FontVertex { Position = new Vector2(x        , y + height),   /* Top   -left  */  TexCoord = new Vector2(u1, v1) });
+                vertices.Add(new FontVertex { Position = new Vector2(x + width, y + height),   /* Top   -right */  TexCoord = new Vector2(u2, v1) });
+                vertices.Add(new FontVertex { Position = new Vector2(x + width, y         ),   /* Bottom-right */  TexCoord = new Vector2(u2, v2) });
 
                 // Move cursor for the next character
                 if (i + 1 >= text.Length) break; // Avoid out of bounds

@@ -102,15 +102,8 @@ namespace Plotter
 
             // Flip the image vertically to match OpenGL's coordinate system
             using var flipped = new SKBitmap(image.Width, image.Height);
-            using (var canvas = new SKCanvas(flipped))
-            {
-                canvas.Scale(1, -1, 0, image.Height / 2f);
-                canvas.DrawBitmap(image, 0, 0);
-            }
 
-            var pixels = flipped.Bytes;
-
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, flipped.Width, flipped.Height, 0, PixelFormat.Bgra, PixelType.UnsignedByte, pixels);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, flipped.Width, flipped.Height, 0, PixelFormat.Bgra, PixelType.UnsignedByte, image.Pixels);
 
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);

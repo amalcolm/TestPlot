@@ -43,6 +43,11 @@ namespace Plotter
 
             GL.Viewport(0, 0, _glControl.ClientSize.Width, _glControl.ClientSize.Height);
 
+            GL.ClearColor(Color.Gainsboro);
+            // Enable blending for transparency
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
             _plotShaderProgram = ShaderManager.Get("plot");
             _textShaderProgram = ShaderManager.Get("font");
             Init();
@@ -65,7 +70,6 @@ namespace Plotter
             if (!IsLoaded || IsDisposed) return;
 
             _glControl.MakeCurrent();
-            GL.ClearColor(Color.Black);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
             GL.UseProgram(_plotShaderProgram);
@@ -78,7 +82,27 @@ namespace Plotter
             DrawPlots();
 
 
+            // --- Render Text ---
             GL.UseProgram(_textShaderProgram);
+            // Use an orthographic projection matching the control's dimensions for the text
+            var textTransform = Matrix4.CreateOrthographicOffCenter(0, _glControl.ClientSize.Width, 0, _glControl.ClientSize.Height, -1.0f, 1.0f);
+            int textTransformLocation = GL.GetUniformLocation(_textShaderProgram, "uTransform");
+            GL.UniformMatrix4(textTransformLocation, false, ref textTransform);
+
+            // Also, you need to tell the shader which texture unit to use
+            int textureLocation = GL.GetUniformLocation(_textShaderProgram, "uTexture");
+            GL.Uniform1(textureLocation, 0); // Use texture unit 0
+
+            // And set the text color
+            int colorLocation = GL.GetUniformLocation(_textShaderProgram, "uColor");
+            GL.Uniform4(colorLocation, Color.Black);
+
+            int smoothingLocation = GL.GetUniformLocation(_textShaderProgram, "uSmoothing");
+            GL.Uniform1(smoothingLocation, 0.05f);
+
+            int thresholdLocation = GL.GetUniformLocation(_textShaderProgram, "uThreshold");
+            GL.Uniform1(thresholdLocation, 0.75f); // <-- EXPERIMENT WITH THIS VALUE!
+
             DrawText();
 
             _glControl.SwapBuffers();
@@ -88,7 +112,8 @@ namespace Plotter
         protected abstract void Init();
         protected abstract void DrawPlots();
         protected abstract void DrawText();
-        
+        protected abstract void ShutDown();
+
         // --- Resource Management ---
 
         protected override void Dispose(bool disposing)

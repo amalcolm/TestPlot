@@ -4,6 +4,7 @@ namespace Plotter
 {
     internal partial class MyPlotter : MyPlotterBase
     {
+        private object _lock = new();
         private FontFile? font;
         private FontRenderer? fontRenderer;
 
@@ -16,21 +17,23 @@ namespace Plotter
             font = FontLoader.Load("Segoe UI.fnt");
             fontRenderer = new();
 
-            var sin = Plots["Sine Wave"] = new MyPlot(2000, 1000);
+            var sin = Plots["Sine Wave"]   = new MyPlot(2000, 1000);
             var cos = Plots["Cosine Wave"] = new MyPlot(2000, 1000);
 
             timer = new( (object? state) =>
             {
-                if (IsDisposed || !IsLoaded) return;
-                // Generate some sample data
-                double time = DateTime.Now.TimeOfDay.TotalSeconds;
-                sin.Add(Math.Sin(time));
-                cos.Add(Math.Cos(time));
-            
+                lock (_lock)
+                {
+                    if (IsDisposed || !IsLoaded) return;
+                    // Generate some sample data
+                    double time = DateTime.Now.TimeOfDay.TotalSeconds;
+                    sin.Add(Math.Sin(time));
+                    cos.Add(Math.Cos(time));
+                }            
             }, null, 0, 10);
         }
 
-        
+
         /// <summary>
         /// This is our hook to set plot-specific properties right before rendering.
         /// It's called automatically by the base class's render loop for each plot.
@@ -38,11 +41,17 @@ namespace Plotter
         protected override void DrawPlots()
         {
             int colorLocation = GL.GetUniformLocation(_plotShaderProgram, "uColor");
-            ViewPort = new(-1, 1000, 1, -1); // Set viewport to full window
-            foreach (var plot in Plots.Values)
+
+            lock (_lock)
             {
-                GL.Uniform4(colorLocation, plot.Colour );
-                plot.Render();
+                float lastX = (float)Plots.First().Value.XCounter;
+
+                ViewPort = new(lastX - 1000, -1, 1000, 2);
+                foreach (var plot in Plots.Values)
+                {
+                    GL.Uniform4(colorLocation, plot.Colour);
+                    plot.Render();
+                }
             }
         }
    

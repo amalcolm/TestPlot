@@ -29,8 +29,8 @@ namespace TestPlot
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             cbPorts = new ComboBox();
-            myChart = new Plotter.MyChart();
             labError = new Label();
             myPlotter1 = new Plotter.MyPlotter();
             SuspendLayout();
@@ -45,14 +45,6 @@ namespace TestPlot
             cbPorts.TabIndex = 1;
             cbPorts.SelectedIndexChanged += cbPorts_SelectedIndexChanged;
             // 
-            // myChart
-            // 
-            myChart.BackColor = Color.Transparent;
-            myChart.Location = new Point(31, 51);
-            myChart.Name = "myChart";
-            myChart.Size = new Size(1657, 773);
-            myChart.TabIndex = 3;
-            // 
             // labError
             // 
             labError.Font = new Font("Segoe UI", 16F);
@@ -66,18 +58,18 @@ namespace TestPlot
             // 
             // myPlotter1
             // 
-            myPlotter1.Location = new Point(38, 868);
+            myPlotter1.Location = new Point(31, 51);
             myPlotter1.Name = "myPlotter1";
-            myPlotter1.Size = new Size(1070, 498);
+            myPlotter1.Size = new Size(1677, 797);
             myPlotter1.TabIndex = 6;
+            myPlotter1.ViewPort = (RectangleF)resources.GetObject("myPlotter1.ViewPort");
             // 
             // MainForm
             // 
             AutoScaleMode = AutoScaleMode.None;
-            ClientSize = new Size(1720, 1463);
+            ClientSize = new Size(1720, 855);
             Controls.Add(myPlotter1);
             Controls.Add(labError);
-            Controls.Add(myChart);
             Controls.Add(cbPorts);
             DoubleBuffered = true;
             Name = "MainForm";
@@ -89,7 +81,6 @@ namespace TestPlot
 
         #endregion
         private ComboBox cbPorts;
-        private Plotter.MyChart myChart;
         private Label labError;
         private Plotter.MyPlotter myPlotter1;
     }

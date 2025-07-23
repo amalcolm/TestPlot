@@ -75,5 +75,4 @@ namespace Plotter
             GC.SuppressFinalize(this);
         }
     }
-        
 }
