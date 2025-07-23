@@ -1,5 +1,6 @@
 ﻿using OpenTK;
 using OpenTK.Graphics.OpenGL4;
+using System.ComponentModel;
 using Timer = System.Windows.Forms.Timer;
 
 namespace Plotter
@@ -9,6 +10,8 @@ namespace Plotter
         private readonly GLControl _glControl;
         private readonly Timer _renderTimer;
 
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public RectangleF ViewPort { get; set; } = new(0, 1, 100, 2);
 
         // Shader programs
@@ -35,7 +38,6 @@ namespace Plotter
 
         /// <summary>
         /// Final setup method that initializes OpenGL, shaders, and plots.
-        /// This is sealed to ensure the base setup logic cannot be bypassed.
         /// </summary>
         private void OnLoad(object? sender, EventArgs e)
         {

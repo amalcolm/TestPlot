@@ -223,5 +223,5 @@ namespace Plotter
                     plot.DataBackground.Color = (value) ? ColourWarning : ColourNormal;
             }
         }
-*/    }
+*/  }
 }

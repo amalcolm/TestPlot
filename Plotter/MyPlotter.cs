@@ -4,10 +4,11 @@ namespace Plotter
 {
     internal partial class MyPlotter : MyPlotterBase
     {
-        private object _lock = new();
+        private readonly object _lock = new();
         private FontFile? font;
         private FontRenderer? fontRenderer;
 
+        protected bool TestMode = false;
         protected Dictionary<string, MyPlot> Plots = [];
 
         System.Threading.Timer? timer;
@@ -17,8 +18,10 @@ namespace Plotter
             font = FontLoader.Load("Segoe UI.fnt");
             fontRenderer = new();
 
-            var sin = Plots["Sine Wave"]   = new MyPlot(2000, 1000);
-            var cos = Plots["Cosine Wave"] = new MyPlot(2000, 1000);
+            if (!TestMode) return;
+
+            var sin = Plots["Sine Wave"]   = new MyPlot(1000);
+            var cos = Plots["Cosine Wave"] = new MyPlot(1000);
 
             timer = new( (object? state) =>
             {
@@ -40,13 +43,15 @@ namespace Plotter
         /// </summary>
         protected override void DrawPlots()
         {
+            if (Plots.Count == 0) return;
             int colorLocation = GL.GetUniformLocation(_plotShaderProgram, "uColor");
 
             lock (_lock)
             {
                 float lastX = (float)Plots.First().Value.XCounter;
+                int windowSize = Plots.First().Value.WindowSize;
 
-                ViewPort = new(lastX - 1000, -1, 1000, 2);
+                ViewPort = new(lastX - windowSize, -1, windowSize, 2);
                 foreach (var plot in Plots.Values)
                 {
                     GL.Uniform4(colorLocation, plot.Colour);
@@ -58,7 +63,8 @@ namespace Plotter
         protected override void DrawText()
         {   if (font == null) return;
 
-            fontRenderer?.RenderText("Sine Wave", font, 10, 10);
+            if (TestMode)
+                fontRenderer?.RenderText("Sine Wave", font, 10, 10);
         }
 
         protected override void ShutDown()

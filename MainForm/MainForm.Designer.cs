@@ -62,7 +62,6 @@ namespace TestPlot
             myPlotter1.Name = "myPlotter1";
             myPlotter1.Size = new Size(1677, 797);
             myPlotter1.TabIndex = 6;
-            myPlotter1.ViewPort = (RectangleF)resources.GetObject("myPlotter1.ViewPort");
             // 
             // MainForm
             // 

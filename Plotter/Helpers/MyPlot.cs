@@ -19,7 +19,7 @@ namespace Plotter
         // Data and state
         private readonly float[] _vertexData; // The C# circular buffer for vertices (x,y,z)
         private int _currentIndex = 0;        // The index for the next data point
-        private double _xCounter = 0;           // A simple counter for the X-axis value
+        private double _xCounter = -5000000.0; // A simple counter for the X-axis value
         private int _totalPoints = 0;         // Total points currently in the buffer
 
         public double XCounter => _xCounter;
@@ -28,11 +28,10 @@ namespace Plotter
         /// <summary>
         /// Creates a new plot object with its own GPU buffers.
         /// </summary>
-        /// <param name="maxVertices">The maximum number of vertices to store in the circular buffer.</param>
         /// <param name="windowSize">The number of most recent vertices to draw.</param>
-        public MyPlot(int maxVertices, int windowSize)
-        {                                                       if (windowSize > maxVertices) throw new ArgumentException("windowSize cannot be larger than maxVertices.");
-            _maxVertices = maxVertices;
+        public MyPlot(int windowSize)
+        {
+            _maxVertices = windowSize * 4 + Random.Shared.Next(windowSize / 10);  // stagger the block copies to avoid synchronization issues
             _windowSize = windowSize;
 
             // Allocate the C# array to hold all vertex data. 3 floats per vertex (x, y, z).
@@ -73,18 +72,23 @@ namespace Plotter
                 _vertexData[_currentIndex * 3 + 1] = (float)y;
                 _vertexData[_currentIndex * 3 + 2] = 0.0f;
 
-                if (_currentIndex == 0 && _totalPoints >= _maxVertices)
-                {
-                    // visually connect the line strips.
-                    _vertexData[0] = (float)_xCounter;
-                    _vertexData[1] = (float)y;
-                    _vertexData[2] = 0.0f;
-                }
-
                 _xCounter++;
-                _currentIndex = (_currentIndex + 1) % _maxVertices;
                 if (_totalPoints < _maxVertices)
                     _totalPoints++;
+
+                _currentIndex++;
+                
+                if (_currentIndex >= _maxVertices)
+                {
+                    int sourceIndex = (_maxVertices - WindowSize) * 3;
+                    int length = WindowSize * 3;
+
+                    Array.Copy(_vertexData, sourceIndex, _vertexData, 0, length);
+                    // had planned to move the X vlues toward zero for accuracy, but doesn't seem necessary
+                    // circular buffer works if we copy the last value to the front, and draw two line strips
+
+                    _currentIndex = WindowSize;
+                }
             }
         }
 
@@ -93,31 +97,19 @@ namespace Plotter
         /// </summary>
         public void Render()
         {
+            if (_vaoHandle == 0 || _vboHandle == 0 || _totalPoints < 2) return;
+
             lock (_lock)
             {
-            
-            // 1. Upload the latest vertex data from our C# array to the GPU buffer
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vboHandle);
-            GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, _vertexData.Length * sizeof(float), _vertexData);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, _vboHandle);
+                GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, _vertexData.Length * sizeof(float), _vertexData);
 
-            // 2. Bind our VAO to activate the buffer configuration
-            GL.BindVertexArray(_vaoHandle);
+                GL.BindVertexArray(_vaoHandle);
 
-            // 3. Calculate which part of the circular buffer to draw
-            int pointsToDraw = Math.Min(_totalPoints, _windowSize);
-            if (pointsToDraw < 2) return; // Can't draw a line with less than 2 points
+                int pointsToDraw = Math.Min(_totalPoints, _windowSize);
+                int startIdx = _currentIndex - pointsToDraw;
 
-            // Calculate the starting index in our circular buffer
-            int startIdx = (_currentIndex - pointsToDraw + _maxVertices) % _maxVertices;
-
-                // 4. Draw the arrays. This may require two separate draw calls if the window wraps around the buffer.
-                if (startIdx < _currentIndex)
-                    GL.DrawArrays(PrimitiveType.LineStrip, startIdx, pointsToDraw           );
-                else
-                {
-                    GL.DrawArrays(PrimitiveType.LineStrip, startIdx, _maxVertices - startIdx);
-                    GL.DrawArrays(PrimitiveType.LineStrip, 0       , _currentIndex          );
-                }
+                GL.DrawArrays(PrimitiveType.LineStrip, startIdx, pointsToDraw);
             }
         }
 

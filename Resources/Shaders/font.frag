@@ -12,9 +12,8 @@ uniform float uThreshold;
 
 void main()
 {
-    float distance = texture(uTexture, TexCoords).r;
+    vec3 tex = texture(uTexture, TexCoords).rgb;
+    if (tex.r < 0.0001) discard;
 
-    // Use the adjustable threshold instead of a hardcoded 0.5
-    float alpha = smoothstep(uThreshold - uSmoothing, uThreshold + uSmoothing, distance);
-
-    FragColor = vec4(vec3(uColor), alpha);
+    FragColor = vec4(1-tex, tex.r);
+ }
