@@ -10,18 +10,14 @@ namespace Plotter
             => InitializeComponent();
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public MySerialIO IO
+        public MySerialIO IO { get; set; } = default!;
+
+        private void MyChart_Load(object sender, EventArgs e)
         {
-            get => _io;
-            set
-            {
-                if (_io == value) return;
-                if (_io != null) _io.TextReceived -= IO_TextReceived;
-                _io = value;
-                if (_io != null) _io.TextReceived += IO_TextReceived;
-                
-            }
+            IO = new();
+            IO.TextReceived += IO_TextReceived;
         }
+
 
         private void IO_TextReceived(MySerialIO io, string text)
         {
@@ -47,7 +43,7 @@ namespace Plotter
 
         }
 
-        private MySerialIO _io = new();
+
 
     }
 }

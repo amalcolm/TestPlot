@@ -8,7 +8,8 @@ namespace TestPlot
         {
             if (cbPorts.SelectedItem is string data)
             {
-                var io = myChart.IO;
+                var io = myChart.IO;        if (io == null) { _LOG_ERROR("No IO instance available"); return; }
+
                 await io.SetPort(data);
 
                 io.DataReceived -= Io_OnData;
