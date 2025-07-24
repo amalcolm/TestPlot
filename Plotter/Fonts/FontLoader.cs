@@ -1,9 +1,9 @@
 ﻿using OpenTK.Graphics.OpenGL4;
+using StbImageSharp;
 
 namespace Plotter
 {
     using Plotter.Fonts.Json;
-    using SkiaSharp;
     using System.Text.Json;
     using System.Text.RegularExpressions;
 
@@ -142,9 +142,7 @@ namespace Plotter
             {
                 var pair = parts[i].Split(['='], 2);
                 if (pair.Length == 2)
-                {
                     values[pair[0]] = pair[1];
-                }
             }
             return values;
         }
@@ -158,13 +156,24 @@ namespace Plotter
             int handle = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2D, handle);
 
-            using var image = SKBitmap.Decode(filePath);
+            // Load the image and get a pointer to the raw data
+            using (Stream stream = File.OpenRead(filePath))
+            {
+                ImageResult image = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
 
-            // Flip the image vertically to match OpenGL's coordinate system
-            using var flipped = new SKBitmap(image.Width, image.Height);
-
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, flipped.Width, flipped.Height, 0, PixelFormat.Bgra, PixelType.UnsignedByte, image.Pixels);
-
+                // Upload the pixel data to the texture
+                GL.TexImage2D(
+                    TextureTarget.Texture2D,
+                    0,
+                    PixelInternalFormat.Rgba,
+                    image.Width,
+                    image.Height,
+                    0,
+                    PixelFormat.Rgba,
+                    PixelType.UnsignedByte,
+                    image.Data);
+            }
+   
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);

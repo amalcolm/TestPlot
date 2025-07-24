@@ -7,8 +7,8 @@ namespace Plotter
     internal partial class MyPlotter : MyPlotterBase
     {
         protected readonly object _lock = new();
-        private FontFile? font;
-        private FontRenderer? fontRenderer;
+        protected FontFile? font;
+        protected FontRenderer? fontRenderer;
 
         protected bool TestMode = false;
         protected Dictionary<string, MyPlot> Plots = [];
@@ -53,7 +53,7 @@ namespace Plotter
                 float lastX = (float)Plots.First().Value.XCounter;
                 int windowSize = Plots.First().Value.WindowSize;
 
-                ViewPort = new(lastX - windowSize, -6, windowSize, 2030);
+                ViewPort = new(lastX - windowSize, -6, windowSize, 1030);
                 foreach (var plot in Plots.Values)
                 {
                     GL.Uniform4(colorLocation, plot.Colour);

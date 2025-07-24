@@ -22,6 +22,7 @@ namespace Plotter
         private double _xCounter = -Math.Pow(2,22)-1; // maintain float precision for X values
         private int _totalPoints = 0;         // Total points currently in the buffer
 
+        public RunningAverage runningAverage { get; set; }
         public double XCounter => _xCounter;
         public int WindowSize => _windowSize;
 
@@ -31,6 +32,7 @@ namespace Plotter
         /// <param name="windowSize">The number of most recent vertices to draw.</param>
         public MyPlot(int windowSize)
         {
+            runningAverage = new(windowSize);
             _maxVertices = windowSize * 4 + Random.Shared.Next(windowSize / 10);  // stagger the block copies to avoid synchronization issues
             _windowSize = windowSize;
 
@@ -68,6 +70,8 @@ namespace Plotter
         {
             lock (_lock)
             {
+                runningAverage.Add(y);
+
                 _vertexData[_currentIndex * 3 + 0] = (float)_xCounter;
                 _vertexData[_currentIndex * 3 + 1] = (float)y;
                 _vertexData[_currentIndex * 3 + 2] = 0.0f;

@@ -1,5 +1,7 @@
-﻿using OpenTK;
+﻿using OpenTK.Mathematics;
+using OpenTK.GLControl;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Windowing.Common;
 using System.ComponentModel;
 using TestPlot;
 using Timer = System.Windows.Forms.Timer;
@@ -26,10 +28,16 @@ namespace Plotter
         protected MyPlotterBase()
         {
             if (!Program.IsRunning) return;
-           
+
             // Basic control setup
-            var mode = new OpenTK.Graphics.GraphicsMode(32, 24, 0, 4); // 32-bit color, 24-bit depth, 0 stencil, 4 samples for MSAA
-            _glControl = new(mode) { Dock = DockStyle.Fill };
+            var glControlSettings = new GLControlSettings
+            {
+                NumberOfSamples = 4,
+                APIVersion = new Version(3, 3),
+                Profile = ContextProfile.Core,
+                API = ContextAPI.OpenGL
+            };
+            _glControl = new(glControlSettings) { Dock = DockStyle.Fill };
             this.Controls.Add(_glControl);
 
             // Hook the one-time load event
