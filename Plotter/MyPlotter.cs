@@ -53,7 +53,7 @@ namespace Plotter
                 float lastX = (float)Plots.First().Value.XCounter;
                 int windowSize = Plots.First().Value.WindowSize;
 
-                ViewPort = new(lastX - windowSize, -1, windowSize, 2);
+                ViewPort = new(lastX - windowSize, -6, windowSize, 2030);
                 foreach (var plot in Plots.Values)
                 {
                     GL.Uniform4(colorLocation, plot.Colour);

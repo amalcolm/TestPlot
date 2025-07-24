@@ -82,7 +82,7 @@ namespace Plotter
             GL.UseProgram(_plotShaderProgram);
 
             // --- Calculate and Upload Transformation Matrix ---
-            var transform = Matrix4.CreateOrthographicOffCenter(ViewPort.Left, ViewPort.Right, ViewPort.Bottom, ViewPort.Top, -1.0f, 1.0f);
+            var transform = Matrix4.CreateOrthographicOffCenter(ViewPort.Left, ViewPort.Right, ViewPort.Top, ViewPort.Bottom, -1.0f, 1.0f);
             int transformLocation = GL.GetUniformLocation(_plotShaderProgram, "uTransform");
             GL.UniformMatrix4(transformLocation, false, ref transform);
 
