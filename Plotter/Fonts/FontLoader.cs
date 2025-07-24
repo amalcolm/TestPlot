@@ -2,15 +2,75 @@
 
 namespace Plotter
 {
+    using Plotter.Fonts.Json;
     using SkiaSharp;
+    using System.Text.Json;
     using System.Text.RegularExpressions;
 
     public static class FontLoader
     {
         public static FontFile Load(string filePath)
         {
-            var fontFile = new FontFile();
             if (!filePath.Contains('\\')) filePath = $@"Resources\Fonts\{filePath}";
+
+            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+            return ext switch
+            {
+                ".fnt"  => LoadFNT (filePath),
+                ".json" => LoadJson(filePath),
+                _ => throw new NotSupportedException($"Unsupported font file format: {ext}")
+            };
+        }
+
+        public static FontFile LoadJson(string filePath)
+        {
+            var jsonString = File.ReadAllText(filePath);
+            var jsonFontFile = JsonSerializer.Deserialize<JsonFontFile>(jsonString);
+
+            if (jsonFontFile == null || jsonFontFile.Info == null || jsonFontFile.Common == null)
+                throw new InvalidDataException("JSON font file is missing required sections (info, common).");
+
+            var fontFile = new FontFile();
+
+            fontFile.SetInfo(jsonFontFile.Info.Face, jsonFontFile.Info.Size);
+            fontFile.SetCommon(jsonFontFile.Common.LineHeight, jsonFontFile.Common.Base, jsonFontFile.Common.ScaleW, jsonFontFile.Common.ScaleH);
+
+            if (jsonFontFile.Pages.Count > 0)
+            {
+                var textureFileName = jsonFontFile.Pages[0];
+                fontFile.SetPage(textureFileName);
+
+                string? directory = Path.GetDirectoryName(filePath);
+                string texturePath = Path.Combine(directory ?? "", textureFileName);
+                int textureId = LoadTexture(texturePath);
+                fontFile.SetTextureId(textureId);
+            }
+
+            foreach (var jsonChar in jsonFontFile.Chars)
+            {
+                var fontChar = new FontChar
+                {
+                    ID       = jsonChar.Id,
+                    X        = jsonChar.X,
+                    Y        = jsonChar.Y,
+                    Width    = jsonChar.Width,
+                    Height   = jsonChar.Height,
+                    XOffset  = jsonChar.XOffset,
+                    YOffset  = jsonChar.YOffset,
+                    XAdvance = jsonChar.XAdvance
+                };
+                fontFile.Chars[fontChar.ID] = fontChar;
+            }
+
+            foreach (var jsonKerning in jsonFontFile.Kernings)
+                fontFile.Kernings[(jsonKerning.First, jsonKerning.Second)] = jsonKerning.Amount;
+
+            return fontFile;
+        }
+
+        public static FontFile LoadFNT(string filePath)
+        { 
+            var fontFile = new FontFile();
             var lines = File.ReadLines(filePath);
 
             foreach (var line in lines)
@@ -80,7 +140,7 @@ namespace Plotter
             var values = new Dictionary<string, string>();
             for (int i = 1; i < parts.Length; i++)
             {
-                var pair = parts[i].Split(new[] { '=' }, 2);
+                var pair = parts[i].Split(['='], 2);
                 if (pair.Length == 2)
                 {
                     values[pair[0]] = pair[1];

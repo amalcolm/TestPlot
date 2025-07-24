@@ -9,6 +9,7 @@
 
         private void MainForm_Load(object sender, EventArgs e)
             => FindSerial();
+        
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
             => isClosing = true;

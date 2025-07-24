@@ -12,14 +12,14 @@ namespace Plotter
 
         public string Face          { get; private set; } = string.Empty;
         public int    Size          { get; private set; }
-        public int    LineHeight    { get; private set; }
-        public int    Base          { get; private set; }
+        public float  LineHeight    { get; private set; }
+        public float  Base          { get; private set; }
         public int    TextureWidth  { get; private set; }
         public int    TextureHeight { get; private set; }
         public string TextureFile   { get; private set; } = string.Empty;
 
         public Dictionary<int, FontChar> Chars { get; } = [];
-        public Dictionary<(int, int), int> Kernings { get; } = [];
+        public Dictionary<(int, int), float> Kernings { get; } = [];
 
         internal FontFile() { }
 
@@ -28,10 +28,10 @@ namespace Plotter
             Face = face;
             Size = size;
 
-            if (face == "Segoe UI") Default = this; // Set default font if it's Segoe UI
+            if (Default == default!) Default = this;
         }
 
-        internal void SetCommon(int lineHeight, int baseHeight, int textureWidth, int textureHeight)
+        internal void SetCommon(float lineHeight, float baseHeight, int textureWidth, int textureHeight)
         {
             LineHeight    = lineHeight;
             Base          = baseHeight;
@@ -45,7 +45,7 @@ namespace Plotter
         /// <summary>
         /// Gets the kerning adjustment between two characters.
         /// </summary>
-        public int GetKerning(char first, char second) 
+        public float GetKerning(char first, char second) 
             => Kernings.TryGetValue(((int)first, (int)second), out var amount) ? amount : 0;
 
         private int _textureId = -1;

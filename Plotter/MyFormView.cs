@@ -12,7 +12,7 @@ namespace Plotter
         }
 
         [Browsable(true)] [Category("Appearance")] [Description("The chart to display data from the serial device.")]
-        public MyChart? Chart { get; set; }
+        public MyOldChart? Chart { get; set; }
 
 
         private Dictionary<MyTextbox, string> _data = [];

@@ -19,7 +19,7 @@ namespace Plotter
         // Data and state
         private readonly float[] _vertexData; // The C# circular buffer for vertices (x,y,z)
         private int _currentIndex = 0;        // The index for the next data point
-        private double _xCounter = -5000000.0; // A simple counter for the X-axis value
+        private double _xCounter = -Math.Pow(2,22)-1; // maintain float precision for X values
         private int _totalPoints = 0;         // Total points currently in the buffer
 
         public double XCounter => _xCounter;

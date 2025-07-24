@@ -5,7 +5,7 @@ using Timer = System.Windows.Forms.Timer;
 
 namespace Plotter
 {
-
+    [ToolboxItem(false)]
     public class MyTextbox : RichTextBox
     {
         private static readonly Timer _updateTimer = new();

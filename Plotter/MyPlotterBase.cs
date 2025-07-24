@@ -1,21 +1,23 @@
 ﻿using OpenTK;
 using OpenTK.Graphics.OpenGL4;
 using System.ComponentModel;
+using TestPlot;
 using Timer = System.Windows.Forms.Timer;
 
 namespace Plotter
 {
+    [ToolboxItem(false)]
     internal abstract class MyPlotterBase : UserControl
     {
-        private readonly GLControl _glControl;
-        private readonly Timer _renderTimer;
+        private readonly GLControl _glControl = default!;
+        private readonly Timer _renderTimer = default!;
 
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public RectangleF ViewPort { get; set; } = new(0, 1, 100, 2);
 
         // Shader programs
-        protected int _plotShaderProgram;
+        protected int _plotShaderProgram ;
         protected int _textShaderProgram;
 
         public bool IsLoaded => _isLoaded;
@@ -23,6 +25,8 @@ namespace Plotter
 
         protected MyPlotterBase()
         {
+            if (!Program.IsRunning) return;
+           
             // Basic control setup
             var mode = new OpenTK.Graphics.GraphicsMode(32, 24, 0, 4); // 32-bit color, 24-bit depth, 0 stencil, 4 samples for MSAA
             _glControl = new(mode) { Dock = DockStyle.Fill };
@@ -46,14 +50,15 @@ namespace Plotter
             GL.Viewport(0, 0, _glControl.ClientSize.Width, _glControl.ClientSize.Height);
 
             GL.ClearColor(Color.Gainsboro);
-            // Enable blending for transparency
+
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             _plotShaderProgram = ShaderManager.Get("plot");
-            _textShaderProgram = ShaderManager.Get("font");
+            _textShaderProgram = ShaderManager.Get("msdf");
             Init();
-            _isLoaded = true;  // allow rendering to start
+
+            _isLoaded = true;
             _renderTimer.Start();
         }
 

@@ -1,7 +1,7 @@
 ﻿
 namespace TestPlot
 {
-    partial class MainForm
+    partial class MainForm : Form
     {
         /// <summary>
         /// Required designer variable.
@@ -29,10 +29,9 @@ namespace TestPlot
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             cbPorts = new ComboBox();
             labError = new Label();
-            myPlotter1 = new Plotter.MyPlotter();
+            myChart = new Plotter.MyChart();
             SuspendLayout();
             // 
             // cbPorts
@@ -56,18 +55,18 @@ namespace TestPlot
             labError.Text = "Plotter v1.00";
             labError.TextAlign = ContentAlignment.MiddleCenter;
             // 
-            // myPlotter1
+            // myChart
             // 
-            myPlotter1.Location = new Point(31, 51);
-            myPlotter1.Name = "myPlotter1";
-            myPlotter1.Size = new Size(1677, 797);
-            myPlotter1.TabIndex = 6;
+            myChart.Location = new Point(18, 66);
+            myChart.Name = "myChart";
+            myChart.Size = new Size(1680, 777);
+            myChart.TabIndex = 6;
             // 
             // MainForm
             // 
             AutoScaleMode = AutoScaleMode.None;
             ClientSize = new Size(1720, 855);
-            Controls.Add(myPlotter1);
+            Controls.Add(myChart);
             Controls.Add(labError);
             Controls.Add(cbPorts);
             DoubleBuffered = true;
@@ -81,6 +80,6 @@ namespace TestPlot
         #endregion
         private ComboBox cbPorts;
         private Label labError;
-        private Plotter.MyPlotter myPlotter1;
+        private Plotter.MyChart myChart;
     }
 }

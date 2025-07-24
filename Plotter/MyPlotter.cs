@@ -1,10 +1,12 @@
 ﻿using OpenTK.Graphics.OpenGL4;
+using System.ComponentModel;
 
 namespace Plotter
 {
+    [ToolboxItem(false)]
     internal partial class MyPlotter : MyPlotterBase
     {
-        private readonly object _lock = new();
+        protected readonly object _lock = new();
         private FontFile? font;
         private FontRenderer? fontRenderer;
 
@@ -15,7 +17,7 @@ namespace Plotter
 
         protected override void Init()
         {
-            font = FontLoader.Load("Segoe UI.fnt");
+            font = FontLoader.Load("Roboto-Medium.json");
             fontRenderer = new();
 
             if (!TestMode) return;

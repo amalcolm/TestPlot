@@ -19,6 +19,12 @@
 		<None Update=".gitattributes" Visible="false" />
 		<None Update="README.md" Visible="false" />
 		<None Update="LICENSE.txt" Visible="false" />
+		<None Update="Resources\Fonts\Roboto-Medium.json">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Resources\Fonts\Roboto-Medium.png">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Resources\Fonts\Segoe UI.fnt">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -43,6 +49,12 @@
 		<None Update="Resources\Shaders\fontVS.vert">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+		<None Update="Resources\Shaders\msdf.frag">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Resources\Shaders\msdf.vert">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Resources\Shaders\plot.frag">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -53,10 +65,6 @@
 
 	<ItemGroup>
 		<Compile Update="GlobalSuppressions.cs" Visible="false" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Resources\" />
 	</ItemGroup>
 
 	<PropertyGroup>
