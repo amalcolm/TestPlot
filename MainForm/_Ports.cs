@@ -4,6 +4,8 @@ namespace TestPlot
 {
     partial class MainForm
     {
+        const string USBtoSERIAL_VENDOR_ID = "16C0";
+
         private async void cbPorts_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (cbPorts.SelectedItem is string data)
@@ -45,7 +47,7 @@ namespace TestPlot
                         return;
 
                     case DialogResult.Retry:
-                        var ports = MySerialIO.GetAvailablePorts();
+                        var ports = MySerialIO.GetUSBSerialPorts(USBtoSERIAL_VENDOR_ID);
                         if (ports.Length == 0) continue;
 
                         cbPorts.Items.AddRange(ports);
@@ -71,14 +73,14 @@ namespace TestPlot
                 try
                 {
                     // Get initial port list
-                    var storedPorts = MySerialIO.GetAvailablePorts();
+                    var storedPorts = MySerialIO.GetUSBSerialPorts(USBtoSERIAL_VENDOR_ID);
 
                     // Monitor until first change is detected or cancellation is requested
                     while (!_serialMonitorCts.Token.IsCancellationRequested)
                     {
                         await Task.Delay(1000, _serialMonitorCts.Token);
 
-                        var currentPorts = MySerialIO.GetAvailablePorts();
+                        var currentPorts = MySerialIO.GetUSBSerialPorts(USBtoSERIAL_VENDOR_ID);
                
                         // If ports have changed, process the change and exit the monitoring loop
                         if (storedPorts.SequenceEqual(currentPorts) == false)

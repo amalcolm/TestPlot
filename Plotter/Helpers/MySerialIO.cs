@@ -2,13 +2,14 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Ports;
+using System.Management;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
 
 namespace Plotter
 {
-    public class MySerialIO
+    public partial class MySerialIO
     {
         public enum IOMode { Raw, Text, Frames }
         public IOMode Mode { get; set; } = IOMode.Raw;
@@ -44,7 +45,7 @@ namespace Plotter
         public bool isOpen { get; private set; } = false;
         public bool FindngStart = true;
 
-        
+
         public MySerialIO()
         {
             if (SocketWatcher.IO != null) throw new InvalidOperationException("SocketWatcher.IO is already set. Please close the existing connection first.");
@@ -62,12 +63,12 @@ namespace Plotter
 
                 SP = new SerialPort(port)
                 {
-                    BaudRate     = 1200,
-                    DataBits     = 8,
-                    StopBits     = StopBits.One,
-                    Parity       = Parity.None,
+                    BaudRate = 1200,
+                    DataBits = 8,
+                    StopBits = StopBits.One,
+                    Parity = Parity.None,
                     WriteTimeout = 1500,
-                    ReadTimeout  = 1500
+                    ReadTimeout = 1500
                 };
 
                 Connect();
@@ -98,7 +99,7 @@ namespace Plotter
         }
 
 
-        MyFrame InFrame  = new(toWrite: false);
+        MyFrame InFrame = new(toWrite: false);
         MyFrame OutFrame = new(toWrite: true);
         bool IsContinuous = false;
         int nLastDataTick = 0;
@@ -183,7 +184,7 @@ namespace Plotter
 
                     if (ex.Message == ERROR_TIMEOUT)
                         continue;
-                    
+
                     if (ex.Message == ERROR_FRAME_NOT_RECOGNISED)
                     {
                         currentPacket.Clear();
@@ -196,7 +197,7 @@ namespace Plotter
 
                     if (SP.IsOpen)
                         SP.Close();
-                 
+
                     break;
                 }
                 finally
@@ -206,7 +207,7 @@ namespace Plotter
             }
 
             isOpen = SP != null && SP.IsOpen;
-    
+
             if (cancellationToken.IsCancellationRequested == false)
                 Error?.Invoke(this, ERROR_DISCONNECTED);
 
@@ -218,14 +219,14 @@ namespace Plotter
         private int consecutiveTextPackets = 0;
         private static readonly int TEXT_PROBE_THRESHOLD = 0;
         private static readonly byte[] HS_fNIRS_Probe = { 0x10, 0x02, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00 };
-        private static readonly byte[] HS_Plotter     = { 0x10, 0x02, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x01 };
-        
+        private static readonly byte[] HS_Plotter = { 0x10, 0x02, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x01 };
+
 
         private void ProcessData(DateTime timestamp, byte[] bytes)
         {
             switch (Mode)
             {
-                case IOMode.Text  : ProcessTextData(bytes); return;
+                case IOMode.Text: ProcessTextData(bytes); return;
                 case IOMode.Frames: ProcessFrameData(bytes); return;
             }
 
@@ -270,7 +271,7 @@ namespace Plotter
         }
 
         // Use a List<byte> as a class-level buffer.
-        
+
         private readonly List<byte> byteBuffer = [];
 
         private void ProcessTextData(byte[] bytes)
@@ -348,7 +349,7 @@ namespace Plotter
 
             switch (val)
             {
-                case "G": IsContinuous = true ; break;
+                case "G": IsContinuous = true; break;
                 case "H": IsContinuous = false; break;
             }
 
@@ -393,11 +394,53 @@ namespace Plotter
             }
         }
 
-        public static string[] GetAvailablePorts()
+        public static string[] GetUSBSerialPorts(string vendorId, string? productId = null)
         {
-            return [..SerialPort.GetPortNames().OrderBy(port => port, new NaturalStringComparer())];
+            if (string.IsNullOrEmpty(vendorId)) return [];
+
+
+            // Construct the search query for the PnP entity.
+            string searchQuery = $"SELECT * FROM Win32_PnPEntity WHERE DeviceID LIKE '%VID_{vendorId}%'";
+            if (!string.IsNullOrEmpty(productId))
+                searchQuery += $" AND DeviceID LIKE '%PID_{productId}%'";
+
+            List<string> ports = [];
+            try
+            {
+                using (var searcher = new ManagementObjectSearcher(searchQuery))
+                {
+                    foreach (var device in searcher.Get())
+                    {
+                        if (device["Name"] == null)
+                            continue;
+
+                        // Use a regular expression to find the COM port name within the string.
+                        Match match = MyRegex().Match(device["Name"].ToString()!);
+                        if (match.Success)
+                        {
+                            // Return the matched value, removing the parentheses.
+                            ports.Add(match.Value.ToString().Trim('(', ')'));
+                        }
+                    }
+                }
+            }
+            catch (ManagementException ex)
+            {
+                // Handle exceptions, e.g., WMI service not running.
+                Console.WriteLine($"An error occurred while querying WMI: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An unexpected error occurred: {ex.Message}");
+            }
+
+
+            // Return nu/ll if no matching device with a COM port was found.
+            return [..ports];
         }
 
+        [GeneratedRegex(@"\(COM\d+\)")]
+        private static partial Regex MyRegex();
     }
 
     [ToolboxItem(false)]
