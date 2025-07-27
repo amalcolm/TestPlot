@@ -1,6 +1,6 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 
-namespace Plotter
+namespace Plotter.Fonts
 {
 
     /// <summary>
@@ -8,7 +8,7 @@ namespace Plotter
     /// </summary>
     public class FontFile : IDisposable
     {
-        public static FontFile Default { get; set; } = default!;
+        public static FontFile Default { get; set; } = default!;  // Need to always instantiate this before use!  (Done in MyGLControl)
 
         public string Face          { get; private set; } = string.Empty;
         public int    Size          { get; private set; }
@@ -28,7 +28,8 @@ namespace Plotter
             Face = face;
             Size = size;
 
-            if (Default == default!) Default = this;
+            if (string.Equals(face, "Roboto Medium", StringComparison.OrdinalIgnoreCase))   
+                Default = this;
         }
 
         internal void SetCommon(float lineHeight, float baseHeight, int textureWidth, int textureHeight)
@@ -55,16 +56,6 @@ namespace Plotter
         internal void SetTextureId(int textureId)
         {
             _textureId = textureId;
-        }
-
-        /// <summary>
-        /// Activates and binds the font's texture to the specified texture unit.
-        /// </summary>
-        /// <param name="unit">The texture unit to bind to (e.g., TextureUnit.Texture0).</param>
-        public void UseTexture(TextureUnit unit = TextureUnit.Texture0)
-        {
-            GL.ActiveTexture(unit);
-            GL.BindTexture(TextureTarget.Texture2D, _textureId);
         }
 
         public void Dispose()

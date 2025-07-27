@@ -1,4 +1,4 @@
-﻿namespace Plotter
+﻿namespace Plotter.Fonts
 {
     /// <summary>
     /// Holds the rendering data for a single character in the font atlas.

@@ -1,35 +1,41 @@
-﻿using OpenTK.Mathematics;
-using OpenTK.GLControl;
+﻿using OpenTK.GLControl;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
+using Plotter.Fonts;
 using System.ComponentModel;
 using TestPlot;
 using Timer = System.Windows.Forms.Timer;
 
-namespace Plotter
+namespace Plotter.UserControls
 {
     [ToolboxItem(false)]
-    internal abstract class MyPlotterBase : UserControl
+    internal class MyGLControl : UserControl
     {
         private readonly GLControl _glControl = default!;
         private readonly Timer _renderTimer = default!;
-
-        [Browsable(false)]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public RectangleF ViewPort { get; set; } = new(0, 1, 100, 2);
-
-        // Shader programs
-        protected int _plotShaderProgram ;
         protected int _textShaderProgram;
 
         public bool IsLoaded => _isLoaded;
         private bool _isLoaded = false;
 
-        protected MyPlotterBase()
-        {
-            if (!Program.IsRunning) return;
+        protected FontFile? font;
+        protected FontRenderer? fontRenderer;
 
-            // Basic control setup
+        // --- Methods for Subclasses ---
+        protected virtual void Init() { }
+        protected virtual void Render() { }
+        protected virtual void DrawText() { }
+        protected virtual void ShutDown() { }
+
+
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public RectangleF ViewPort { get; set; } = new(0, 1, 100, 2);
+
+
+        public MyGLControl()
+        {
             var glControlSettings = new GLControlSettings
             {
                 NumberOfSamples = 4,
@@ -40,18 +46,17 @@ namespace Plotter
             _glControl = new(glControlSettings) { Dock = DockStyle.Fill };
             this.Controls.Add(_glControl);
 
-            // Hook the one-time load event
-            _glControl.Load += OnLoad;
-            _glControl.Resize += OnResize;
+            this.Load += GL_Load;
+            this.Resize += GL_Resize;
 
             _renderTimer = new Timer() { Interval = 15 };
-            _renderTimer.Tick += Render;
+            _renderTimer.Tick += RenderLoop;
         }
 
         /// <summary>
         /// Final setup method that initializes OpenGL, shaders, and plots.
         /// </summary>
-        private void OnLoad(object? sender, EventArgs e)
+        private void GL_Load(object? sender, EventArgs e)
         {
             if (IsLoaded || IsDisposed) return;
 
@@ -62,74 +67,57 @@ namespace Plotter
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-            _plotShaderProgram = ShaderManager.Get("plot");
+            font = FontLoader.Load("Roboto-Medium.json");
+            fontRenderer = new();
+
             _textShaderProgram = ShaderManager.Get("msdf");
             Init();
 
             _isLoaded = true;
             _renderTimer.Start();
         }
-
-        private void OnResize(object? sender, EventArgs e)
+        
+        private void GL_Resize(object? sender, EventArgs e)
         {
             if (!_isLoaded) return;
-            // Update the viewport to match the new control size
+
             GL.Viewport(0, 0, _glControl.ClientSize.Width, _glControl.ClientSize.Height);
         }
 
         /// <summary>
         /// The main render loop. Renders all registered plots.
         /// </summary>
-        private void Render(object? sender, EventArgs e)
+        private void RenderLoop(object? sender, EventArgs e)
         {
             if (!IsLoaded || IsDisposed) return;
 
             _glControl.MakeCurrent();
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            GL.UseProgram(_plotShaderProgram);
+            Render();
 
-            // --- Calculate and Upload Transformation Matrix ---
-            var transform = Matrix4.CreateOrthographicOffCenter(ViewPort.Left, ViewPort.Right, ViewPort.Top, ViewPort.Bottom, -1.0f, 1.0f);
-            int transformLocation = GL.GetUniformLocation(_plotShaderProgram, "uTransform");
-            GL.UniformMatrix4(transformLocation, false, ref transform);
-
-            DrawPlots();
-
-
-            // --- Render Text ---
-            GL.UseProgram(_textShaderProgram);
-            // Use an orthographic projection matching the control's dimensions for the text
-            var textTransform = Matrix4.CreateOrthographicOffCenter(0, _glControl.ClientSize.Width, 0, _glControl.ClientSize.Height, -1.0f, 1.0f);
-            int textTransformLocation = GL.GetUniformLocation(_textShaderProgram, "uTransform");
-            GL.UniformMatrix4(textTransformLocation, false, ref textTransform);
-
-            // Also, you need to tell the shader which texture unit to use
-            int textureLocation = GL.GetUniformLocation(_textShaderProgram, "uTexture");
-            GL.Uniform1(textureLocation, 0); // Use texture unit 0
-
-            // And set the text color
-            int colorLocation = GL.GetUniformLocation(_textShaderProgram, "uColor");
-            GL.Uniform4(colorLocation, Color.Black);
-
-            int smoothingLocation = GL.GetUniformLocation(_textShaderProgram, "uSmoothing");
-            GL.Uniform1(smoothingLocation, 0.05f);
-
-            int thresholdLocation = GL.GetUniformLocation(_textShaderProgram, "uThreshold");
-            GL.Uniform1(thresholdLocation, 0.75f); // <-- EXPERIMENT WITH THIS VALUE!
-
-            DrawText();
+            RenderText();
 
             _glControl.SwapBuffers();
         }
 
-        // --- Methods for Subclasses ---
-        protected abstract void Init();
-        protected abstract void DrawPlots();
-        protected abstract void DrawText();
-        protected abstract void ShutDown();
+        private void RenderText()
+        {
+            GL.UseProgram(_textShaderProgram);
 
-        // --- Resource Management ---
+            // (0,0) is bottom-left corner, opposite of Windows Forms
+            var textTransform = Matrix4.CreateOrthographicOffCenter(0, _glControl.ClientSize.Width, 0, _glControl.ClientSize.Height, -1.0f, 1.0f);
+            int textTransformLocation = GL.GetUniformLocation(_textShaderProgram, "uTransform");
+            GL.UniformMatrix4(textTransformLocation, false, ref textTransform);
+
+            int textureLocation = GL.GetUniformLocation(_textShaderProgram, "uTexture");
+            GL.Uniform1(textureLocation, 0);
+
+            int colorLocation = GL.GetUniformLocation(_textShaderProgram, "uColor");
+            GL.Uniform4(colorLocation, Color.Black);
+
+            DrawText();
+        }
 
         protected override void Dispose(bool disposing)
         {
@@ -150,5 +138,7 @@ namespace Plotter
             }
             base.Dispose(disposing);
         }
+
+
     }
 }

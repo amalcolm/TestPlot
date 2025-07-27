@@ -1,4 +1,4 @@
-﻿namespace Plotter
+﻿namespace Plotter.UserControls
 {
     partial class MyChart : MyPlotter
     {

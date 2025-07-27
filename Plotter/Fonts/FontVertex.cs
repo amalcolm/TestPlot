@@ -1,6 +1,6 @@
 ﻿using OpenTK.Mathematics;
 
-namespace Plotter
+namespace Plotter.Fonts
 {
     internal struct FontVertex
     {

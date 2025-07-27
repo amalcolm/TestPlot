@@ -31,7 +31,7 @@ namespace TestPlot
         {
             cbPorts = new ComboBox();
             labError = new Label();
-            myChart = new Plotter.MyChart();
+            myChart = new Plotter.UserControls.MyChart();
             SuspendLayout();
             // 
             // cbPorts
@@ -80,6 +80,6 @@ namespace TestPlot
         #endregion
         private ComboBox cbPorts;
         private Label labError;
-        private Plotter.MyChart myChart;
+        private Plotter.UserControls.MyChart myChart;
     }
 }

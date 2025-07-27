@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace Plotter
+namespace Plotter.UserControls
 {
     internal partial class MyChart : MyPlotter
     {

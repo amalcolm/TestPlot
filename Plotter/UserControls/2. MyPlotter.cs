@@ -1,24 +1,23 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 using System.ComponentModel;
 
-namespace Plotter
+namespace Plotter.UserControls
 {
+    using Fonts;
+
     [ToolboxItem(false)]
     internal partial class MyPlotter : MyPlotterBase
     {
         protected readonly object _lock = new();
-        protected FontFile? font;
-        protected FontRenderer? fontRenderer;
-
-        protected bool TestMode = false;
+        
+        protected bool TestMode = true;
         protected Dictionary<string, MyPlot> Plots = [];
 
         System.Threading.Timer? timer;
 
         protected override void Init()
         {
-            font = FontLoader.Load("Roboto-Medium.json");
-            fontRenderer = new();
+            base.Init();
 
             if (!TestMode) return;
 
@@ -63,14 +62,10 @@ namespace Plotter
         }
    
         protected override void DrawText()
-        {   if (font == null) return;
-
+        {  
             if (TestMode)
-                fontRenderer?.RenderText("Sine Wave", font, 10, 10);
+                fontRenderer?.RenderText("Sine Wave", 10, 10);
         }
 
-        protected override void ShutDown()
-        {
-        }
     }
 }

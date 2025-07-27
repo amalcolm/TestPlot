@@ -394,39 +394,44 @@ namespace Plotter
             }
         }
 
-        public static string[] GetUSBSerialPorts(string vendorId, string? productId = null)
+        /// <summary>
+        /// Gets a list of all present USB serial devices that match the known vendor IDs.
+        /// The list is sorted numerically by COM port number.
+        /// </summary>
+        /// <returns>A sorted array of COM port names (e.g., "COM1", "COM9").</returns>
+        public static string[] GetUSBSerialPorts()
         {
-            if (string.IsNullOrEmpty(vendorId)) return [];
-
-
-            // Construct the search query for the PnP entity.
-            string searchQuery = $"SELECT * FROM Win32_PnPEntity WHERE DeviceID LIKE '%VID_{vendorId}%'";
-            if (!string.IsNullOrEmpty(productId))
-                searchQuery += $" AND DeviceID LIKE '%PID_{productId}%'";
-
             List<string> ports = [];
+
+            // Query for all devices in the "Ports" class to narrow down the search.
+            string searchQuery = "SELECT * FROM Win32_PnPEntity WHERE ClassGuid = '{4d36e978-e325-11ce-bfc1-08002be10318}'";
+
             try
             {
                 using (var searcher = new ManagementObjectSearcher(searchQuery))
                 {
                     foreach (var device in searcher.Get())
                     {
-                        if (device["Name"] == null)
-                            continue;
+                        string deviceId = device["DeviceID"]?.ToString() ?? string.Empty;
+                        string deviceName = device["Name"]?.ToString() ?? string.Empty;
 
-                        // Use a regular expression to find the COM port name within the string.
-                        Match match = MyRegex().Match(device["Name"].ToString()!);
-                        if (match.Success)
+                        // Check if the device's Vendor ID is in our list of known serial vendors.
+                        bool isKnownVendor = UsbSerialVendorIds.Keys.Any(vid => deviceId.Contains($"VID_{vid}", StringComparison.OrdinalIgnoreCase));
+
+                        if (isKnownVendor)
                         {
-                            // Return the matched value, removing the parentheses.
-                            ports.Add(match.Value.ToString().Trim('(', ')'));
+                            // Extract the COM port from the device name.
+                            Match match = ComPortRegex().Match(deviceName);
+                            if (match.Success)
+                            {
+                                ports.Add(match.Value.Trim('(', ')'));
+                            }
                         }
                     }
                 }
             }
             catch (ManagementException ex)
             {
-                // Handle exceptions, e.g., WMI service not running.
                 Console.WriteLine($"An error occurred while querying WMI: {ex.Message}");
             }
             catch (Exception ex)
@@ -434,41 +439,62 @@ namespace Plotter
                 Console.WriteLine($"An unexpected error occurred: {ex.Message}");
             }
 
+            // Sort the found ports using the natural string comparer.
+            ports.Sort(new NaturalStringComparer());
 
-            // Return nu/ll if no matching device with a COM port was found.
-            return [..ports];
+            return [.. ports];
         }
+        [GeneratedRegex(@"\(COM\d+\)")] private static partial Regex ComPortRegex();
 
-        [GeneratedRegex(@"\(COM\d+\)")]
-        private static partial Regex MyRegex();
-    }
 
-    [ToolboxItem(false)]
-    public partial class NaturalStringComparer : IComparer<string>
-    {
-        public int Compare(string? x, string? y)
+        public static readonly Dictionary<string, string> UsbSerialVendorIds = new()
         {
-            var regex = Regex_FindNumber();
+            // Tier 1: The "Big Four" Dedicated Chip Makers
+            // These companies are the most common manufacturers of dedicated USB-to-Serial bridge ICs.
+            { "0403", "FTDI (Future Technology Devices International)" },
+            { "067B", "Prolific Technology Inc." },
+            { "1A86", "WCH (QinHeng Electronics)" },
+            { "10C4", "Silicon Labs" },
 
-            var matchX = regex.Match(x ?? string.Empty);
-            var matchY = regex.Match(y ?? string.Empty);
+            // Tier 2: The Microcontroller & Platform Vendors
+            // These companies manufacture microcontrollers that often include native USB-CDC (serial) capabilities.
+            { "16C0", "V-USB / PJRC (Teensy)" }, // Generic VID for V-USB stack, famously used by Teensy.
+            { "2341", "Arduino" },
+            { "2E8A", "Raspberry Pi" }, // Specifically for the RP2040 chip (Pi Pico).
+            { "0483", "STMicroelectronics" }, // For STM32 microcontrollers.
+            { "04D8", "Microchip Technology" }, // Includes Atmel products.
 
-            if (matchX.Success && matchY.Success)
+            // Tier 3: The Hobbyist & Niche Vendors
+            // These are popular suppliers in the maker community who often register their own VIDs for custom boards.
+ //           { "1B4F", "SparkFun Electronics" },
+ //           { "239A", "Adafruit Industries" }
+        };
+
+
+
+        [ToolboxItem(false)]
+        public partial class NaturalStringComparer : IComparer<string>
+        {
+            public int Compare(string? x, string? y)
             {
-                if (int.TryParse(matchX.Value, out int numX) && int.TryParse(matchY.Value, out int numY))
-                {
-                    int numComparison = numX.CompareTo(numY);
-                    if (numComparison != 0)
+                var regex = Regex_FindNumber();
+
+                var matchX = regex.Match(x ?? string.Empty);
+                var matchY = regex.Match(y ?? string.Empty);
+
+                if (matchX.Success && matchY.Success)
+                    if (int.TryParse(matchX.Value, out int numX) && int.TryParse(matchY.Value, out int numY))
                     {
-                        return numComparison;
+                        int numComparison = numX.CompareTo(numY);
+                        if (numComparison != 0)
+                            return numComparison;
                     }
-                }
+    
+                // Fallback to regular string comparison if numbers are the same or not found
+                return string.Compare(x, y, StringComparison.Ordinal);
             }
-
-            // Fallback to regular string comparison if numbers are the same or not found
-            return string.Compare(x, y, StringComparison.Ordinal);
         }
-
         [GeneratedRegex("(\\d+)")] private static partial Regex Regex_FindNumber();
+
     }
 }

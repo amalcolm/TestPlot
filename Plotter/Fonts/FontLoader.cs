@@ -1,13 +1,13 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 using StbImageSharp;
 
-namespace Plotter
+namespace Plotter.Fonts
 {
     using Plotter.Fonts.Json;
     using System.Text.Json;
     using System.Text.RegularExpressions;
 
-    public static class FontLoader
+    public static partial class FontLoader
     {
         public static FontFile Load(string filePath)
         {
@@ -128,12 +128,10 @@ namespace Plotter
             return fontFile;
         }
 
-        private static string[] SplitLine(string line)
-        {
-            // Use regex to split by spaces, but preserve quoted strings
-            var regex = new Regex("[^\\s\"']+|\"([^\"]*)\"|'([^']*)'");
-            return [.. regex.Matches(line).Cast<Match>().Select(m => m.Value)];
-        }
+        private static string[] SplitLine(string line) 
+            => [.. SplitRegex().Matches(line).Cast<Match>().Select(m => m.Value)];
+        [GeneratedRegex("[^\\s\"']+|\"([^\"]*)\"|'([^']*)'")] private static partial Regex SplitRegex();
+
 
         private static Dictionary<string, string> ParseValues(string[] parts)
         {
@@ -181,6 +179,7 @@ namespace Plotter
 
             return handle;
         }
+
     }
 
 }

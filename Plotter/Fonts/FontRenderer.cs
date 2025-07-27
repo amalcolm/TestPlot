@@ -1,6 +1,6 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 
-namespace Plotter
+namespace Plotter.Fonts
 {
     struct TextBlock(string text, float x, float y, FontFile? font)
     {
@@ -40,20 +40,20 @@ namespace Plotter
             GL.BindVertexArray(0);
         }
 
-        public void RenderText(string text, FontFile font, float x, float y)
+        public void RenderText(string text, float x, float y, FontFile? font = null)
         {   if (string.IsNullOrEmpty(text)) return;
 
             if (text != Text)
             { 
                 Text = text;
-                _vertices = FontVertex.BuildString(text, font, x, y);
+                _vertices = FontVertex.BuildString(text, font ?? FontFile.Default, x, y);
                 BindVertices();
             }
             Render();
         }
 
         public void RenderText(TextBlock block)
-            => RenderText(block.Text, block.Font, block.X, block.Y);
+            => RenderText(block.Text, block.X, block.Y, block.Font);
 
         public void RenderText(IEnumerable<TextBlock> blocks)
         {
