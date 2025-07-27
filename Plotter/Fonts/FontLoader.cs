@@ -42,8 +42,7 @@ namespace Plotter.Fonts
 
                 string? directory = Path.GetDirectoryName(filePath);
                 string texturePath = Path.Combine(directory ?? "", textureFileName);
-                int textureId = LoadTexture(texturePath);
-                fontFile.SetTextureId(textureId);
+                fontFile.TextureId = LoadTexture(texturePath);
             }
 
             foreach (var jsonChar in jsonFontFile.Chars)
@@ -102,7 +101,7 @@ namespace Plotter.Fonts
                         string texturePath = Path.Combine(directory ?? "", $"{filename}.png");
 
                         int textureId = LoadTexture(texturePath);
-                        fontFile.SetTextureId(textureId);
+                        fontFile.TextureId = textureId;
                         break;
 
                     case "char":

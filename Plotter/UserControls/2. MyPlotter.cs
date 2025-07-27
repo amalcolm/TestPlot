@@ -3,39 +3,25 @@ using System.ComponentModel;
 
 namespace Plotter.UserControls
 {
-    using Fonts;
-
     [ToolboxItem(false)]
     internal partial class MyPlotter : MyPlotterBase
     {
-        protected readonly object _lock = new();
-        
-        protected bool TestMode = true;
         protected Dictionary<string, MyPlot> Plots = [];
 
-        System.Threading.Timer? timer;
-
+        protected bool TestMode = false;
+        
         protected override void Init()
         {
             base.Init();
 
             if (!TestMode) return;
 
-            var sin = Plots["Sine Wave"]   = new MyPlot(1000);
-            var cos = Plots["Cosine Wave"] = new MyPlot(1000);
+            sin = Plots["Sine Wave"]   = new MyPlot(1000, this);
+            cos = Plots["Cosine Wave"] = new MyPlot(1000, this);
 
-            timer = new( (object? state) =>
-            {
-                lock (_lock)
-                {
-                    if (IsDisposed || !IsLoaded) return;
-                    // Generate some sample data
-                    double time = DateTime.Now.TimeOfDay.TotalSeconds;
-                    sin.Add(Math.Sin(time));
-                    cos.Add(Math.Cos(time));
-                }            
-            }, null, 0, 10);
         }
+        MyPlot? sin;
+        MyPlot? cos;
 
 
         /// <summary>
@@ -45,19 +31,23 @@ namespace Plotter.UserControls
         protected override void DrawPlots()
         {
             if (Plots.Count == 0) return;
+
+            if (TestMode)
+            {
+                sin?.Add(Math.Sin(sin.XCounter * 1.1) * 500 + 512);
+                cos?.Add(Math.Cos(cos.XCounter * 1.1) * 500 + 512);
+            }
+
             int colorLocation = GL.GetUniformLocation(_plotShaderProgram, "uColor");
 
-            lock (_lock)
-            {
-                float lastX = (float)Plots.First().Value.XCounter;
-                int windowSize = Plots.First().Value.WindowSize;
+            float lastX = (float)Plots.First().Value.XCounter;
+            int windowSize = Plots.First().Value.WindowSize;
 
-                ViewPort = new(lastX - windowSize, -6, windowSize, 1030);
-                foreach (var plot in Plots.Values)
-                {
-                    GL.Uniform4(colorLocation, plot.Colour);
-                    plot.Render();
-                }
+            ViewPort = new(lastX - windowSize, -6, windowSize, 1030);
+            foreach (var plot in Plots.Values)
+            {
+                GL.Uniform4(colorLocation, plot.Colour);
+                plot.Render();
             }
         }
    

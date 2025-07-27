@@ -1,16 +1,17 @@
 ﻿using OpenTK.Graphics.OpenGL4;
+using Plotter.UserControls;
 
 namespace Plotter
 {
-    public class MyPlot : IDisposable
+    internal class MyPlot
     {
         public Color Colour { get; set; } = MyColours.GetNextColour();
 
         private readonly object _lock = new();
 
         // OpenGL handles
-        private readonly int _vboHandle; // Vertex Buffer Object
-        private readonly int _vaoHandle; // Vertex Array Object
+        private int _vboHandle; // Vertex Buffer Object
+        private int _vaoHandle; // Vertex Array Object
 
         // Configuration
         private readonly int _maxVertices;
@@ -30,7 +31,7 @@ namespace Plotter
         /// Creates a new plot object with its own GPU buffers.
         /// </summary>
         /// <param name="windowSize">The number of most recent vertices to draw.</param>
-        public MyPlot(int windowSize)
+        internal MyPlot(int windowSize, MyGLControl myGL)
         {
             runningAverage = new(windowSize);
             _maxVertices = windowSize * 4 + Random.Shared.Next(windowSize / 10);  // stagger the block copies to avoid synchronization issues
@@ -39,6 +40,11 @@ namespace Plotter
             // Allocate the C# array to hold all vertex data. 3 floats per vertex (x, y, z).
             _vertexData = new float[_maxVertices * 3];
 
+            myGL.Enqueue(Init, Shutdown);
+        }
+
+        private void Init()
+        { 
             // --- One-time OpenGL Setup ---
             // 1. Create and bind a VAO
             _vaoHandle = GL.GenVertexArray();
@@ -68,7 +74,7 @@ namespace Plotter
         /// </summary>
         public void Add(double y)
         {
-            lock (_lock)
+//            lock (_lock)
             {
                 runningAverage.Add(y);
 
@@ -103,7 +109,7 @@ namespace Plotter
         {
             if (_vaoHandle == 0 || _vboHandle == 0 || _totalPoints < 2) return;
 
-            lock (_lock)
+//            lock (_lock)
             {
                 GL.BindBuffer(BufferTarget.ArrayBuffer, _vboHandle);
                 GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, _vertexData.Length * sizeof(float), _vertexData);
@@ -120,14 +126,13 @@ namespace Plotter
         /// <summary>
         /// Releases the GPU resources (VBO and VAO).
         /// </summary>
-        public void Dispose()
+        public void Shutdown()
         {
-            lock (_lock)
+  //          lock (_lock)
             {
                 if (_vboHandle != 0) GL.DeleteBuffer(_vboHandle);
                 if (_vaoHandle != 0) GL.DeleteVertexArray(_vaoHandle);
             }
-            GC.SuppressFinalize(this);
         }
     }
 }

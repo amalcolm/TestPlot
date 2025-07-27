@@ -21,23 +21,22 @@ namespace Plotter.UserControls
 
         private void IO_TextReceived(MySerialIO io, string text)
         {
+            if (TestMode) return;
+
             var data = MyTextParser.Parse(text); if (data == null) return;
 
-            lock (_lock)
+            foreach (var kvp in data)
             {
-                foreach (var kvp in data)
+                if (Plots.TryGetValue(kvp.Key, out var plot))
                 {
-                    if (Plots.TryGetValue(kvp.Key, out var plot))
-                    {
-                        plot.Add(kvp.Value);
-                    }
-                    else
-                    {
-                        // Create a new plot if it doesn't exist
-                        var newPlot = new MyPlot(WindowSize);
-                        newPlot.Add(kvp.Value);
-                        Plots[kvp.Key] = newPlot;
-                    }
+                    plot.Add(kvp.Value);
+                }
+                else
+                {
+                    // Create a new plot if it doesn't exist
+                    var newPlot = new MyPlot(WindowSize, this);
+                    newPlot.Add(kvp.Value);
+                    Plots[kvp.Key] = newPlot;
                 }
             }
 

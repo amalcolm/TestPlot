@@ -2,7 +2,6 @@
 using OpenTK.Mathematics;
 using System.ComponentModel;
 using TestPlot;
-using Timer = System.Windows.Forms.Timer;
 
 namespace Plotter.UserControls
 {

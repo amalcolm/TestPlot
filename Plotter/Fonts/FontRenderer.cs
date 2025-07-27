@@ -10,10 +10,10 @@ namespace Plotter.Fonts
         public float     Y     = y;
     }
 
-    internal class FontRenderer : IDisposable
+    internal class FontRenderer
     {
-        private readonly int _vbo;
-        private readonly int _vao;
+        private int _vbo;
+        private int _vao;
         private int _vertexCount = 0;
         private int _bufferSize = 0; // Current size of the VBO in vertices
 
@@ -22,7 +22,8 @@ namespace Plotter.Fonts
 
 
         private List<FontVertex> _vertices = [];
-        public FontRenderer()
+
+        public void Init()
         {
             _vao = GL.GenVertexArray();
             _vbo = GL.GenBuffer();
@@ -97,7 +98,7 @@ namespace Plotter.Fonts
             GL.BindVertexArray(0);
         }
 
-        public void Dispose()
+        public void Shutdown()
         {
             GL.DeleteBuffer(_vbo);
             GL.DeleteVertexArray(_vao);

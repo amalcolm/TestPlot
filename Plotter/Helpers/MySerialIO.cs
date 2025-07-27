@@ -389,7 +389,7 @@ namespace Plotter
                 }
                 finally
                 {
-                    isOpen = false;  // Force state to closed regardless of what SP.ShutDown did
+                    isOpen = false;  // Force state to closed regardless of what SP.Shutdown did
                 }
             }
         }

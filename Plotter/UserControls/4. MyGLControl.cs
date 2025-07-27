@@ -3,6 +3,7 @@ using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using Plotter.Fonts;
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using TestPlot;
 using Timer = System.Windows.Forms.Timer;
@@ -12,21 +13,37 @@ namespace Plotter.UserControls
     [ToolboxItem(false)]
     internal class MyGLControl : UserControl
     {
-        private readonly GLControl _glControl = default!;
-        private readonly Timer _renderTimer = default!;
+        static int InstanceCount = 0;
+
+        public MyGLThread GLThread { get; private set; }
+        public void Enqueue(Action? initAction, Action? shutdownAction = null) 
+            => GLThread.Enqueue(initAction, shutdownAction);
+        
+
+        static ConcurrentDictionary<string, FontFile> _fontCache = [];
+        public static FontFile GetFont(string name)
+        {
+            if (_fontCache.TryGetValue(name, out var font))
+                return font;
+            font = FontLoader.Load(name);
+            _fontCache[name] = font;
+            return font;
+        }
+
+        protected readonly GLControl MyGL = default!;
         protected int _textShaderProgram;
 
         public bool IsLoaded => _isLoaded;
         private bool _isLoaded = false;
 
         protected FontFile? font;
-        protected FontRenderer? fontRenderer;
+        protected FontRenderer fontRenderer = new();
 
         // --- Methods for Subclasses ---
         protected virtual void Init() { }
         protected virtual void Render() { }
         protected virtual void DrawText() { }
-        protected virtual void ShutDown() { }
+        protected virtual void Shutdown() { }
 
 
         [Browsable(false)]
@@ -36,6 +53,8 @@ namespace Plotter.UserControls
 
         public MyGLControl()
         {
+            InstanceCount++;
+
             var glControlSettings = new GLControlSettings
             {
                 NumberOfSamples = 4,
@@ -43,62 +62,61 @@ namespace Plotter.UserControls
                 Profile = ContextProfile.Core,
                 API = ContextAPI.OpenGL
             };
-            _glControl = new(glControlSettings) { Dock = DockStyle.Fill };
-            this.Controls.Add(_glControl);
+            MyGL = new(glControlSettings) { Dock = DockStyle.Fill };
+            this.Controls.Add(MyGL);
 
-            this.Load += GL_Load;
-            this.Resize += GL_Resize;
+            GLThread = new(MyGL);
 
-            _renderTimer = new Timer() { Interval = 15 };
-            _renderTimer.Tick += RenderLoop;
+            this.Load += (s,e) => GLThread.Enqueue(GL_Load, GL_Shutdown);
+            this.Resize += (s,e) => GLThread.Enqueue(GL_Resize);
+            GLThread.RenderAction = RenderLoop;
         }
 
         /// <summary>
         /// Final setup method that initializes OpenGL, shaders, and plots.
         /// </summary>
-        private void GL_Load(object? sender, EventArgs e)
+        private void GL_Load()
         {
             if (IsLoaded || IsDisposed) return;
 
-            GL.Viewport(0, 0, _glControl.ClientSize.Width, _glControl.ClientSize.Height);
+            GL.Viewport(0, 0, MyGL.ClientSize.Width, MyGL.ClientSize.Height);
 
             GL.ClearColor(Color.Gainsboro);
 
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-            font = FontLoader.Load("Roboto-Medium.json");
-            fontRenderer = new();
-
             _textShaderProgram = ShaderManager.Get("msdf");
-            Init();
+            font = GetFont("Roboto-Medium.json");
+            fontRenderer.Init();
+            if (ParentForm != null)
+                ParentForm.FormClosing += (s, e) => _isLoaded = false;
 
+
+            Init();
             _isLoaded = true;
-            _renderTimer.Start();
         }
         
-        private void GL_Resize(object? sender, EventArgs e)
-        {
-            if (!_isLoaded) return;
+        private void GL_Resize()
+        {   if (!_isLoaded) return;
 
-            GL.Viewport(0, 0, _glControl.ClientSize.Width, _glControl.ClientSize.Height);
+            GL.Viewport(0, 0, MyGL.ClientSize.Width, MyGL.ClientSize.Height);
         }
 
         /// <summary>
         /// The main render loop. Renders all registered plots.
         /// </summary>
-        private void RenderLoop(object? sender, EventArgs e)
+        private void RenderLoop()
         {
             if (!IsLoaded || IsDisposed) return;
 
-            _glControl.MakeCurrent();
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
             Render();
 
             RenderText();
 
-            _glControl.SwapBuffers();
+            MyGL.SwapBuffers();
         }
 
         private void RenderText()
@@ -106,7 +124,7 @@ namespace Plotter.UserControls
             GL.UseProgram(_textShaderProgram);
 
             // (0,0) is bottom-left corner, opposite of Windows Forms
-            var textTransform = Matrix4.CreateOrthographicOffCenter(0, _glControl.ClientSize.Width, 0, _glControl.ClientSize.Height, -1.0f, 1.0f);
+            var textTransform = Matrix4.CreateOrthographicOffCenter(0, MyGL.ClientSize.Width, 0, MyGL.ClientSize.Height, -1.0f, 1.0f);
             int textTransformLocation = GL.GetUniformLocation(_textShaderProgram, "uTransform");
             GL.UniformMatrix4(textTransformLocation, false, ref textTransform);
 
@@ -119,24 +137,26 @@ namespace Plotter.UserControls
             DrawText();
         }
 
-        protected override void Dispose(bool disposing)
+        protected void GL_Shutdown()
         {
-            if (disposing)
+            if (_isLoaded)
             {
-                _renderTimer.Dispose();
+                _isLoaded = false;
 
-                if (_isLoaded)
+                Shutdown();
+
+                InstanceCount--;
+
+                if (InstanceCount == 0)
                 {
-                    _isLoaded = false;
+                    fontRenderer.Shutdown();
 
-                    Thread.Sleep(100); // Allow time for the render loop to finish
-
-                    ShutDown();
+                    foreach (var font in _fontCache.Values)
+                        GL.DeleteTexture(font.TextureId);
 
                     ShaderManager.Clear();
                 }
             }
-            base.Dispose(disposing);
         }
 
 

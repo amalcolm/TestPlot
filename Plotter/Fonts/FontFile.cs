@@ -6,7 +6,7 @@ namespace Plotter.Fonts
     /// <summary>
     /// Represents a parsed .fnt file, containing all character and metric data.
     /// </summary>
-    public class FontFile : IDisposable
+    public class FontFile
     {
         public static FontFile Default { get; set; } = default!;  // Need to always instantiate this before use!  (Done in MyGLControl)
 
@@ -17,6 +17,8 @@ namespace Plotter.Fonts
         public int    TextureWidth  { get; private set; }
         public int    TextureHeight { get; private set; }
         public string TextureFile   { get; private set; } = string.Empty;
+        public int    TextureId     { get;         set; } = -1;
+
 
         public Dictionary<int, FontChar> Chars { get; } = [];
         public Dictionary<(int, int), float> Kernings { get; } = [];
@@ -49,21 +51,6 @@ namespace Plotter.Fonts
         public float GetKerning(char first, char second) 
             => Kernings.TryGetValue(((int)first, (int)second), out var amount) ? amount : 0;
 
-        private int _textureId = -1;
 
-
-        // Called by FontLoader after the texture is created
-        internal void SetTextureId(int textureId)
-        {
-            _textureId = textureId;
-        }
-
-        public void Dispose()
-        {
-            // Ensure the OpenGL resource is released when the object is disposed
-            if (_textureId != -1) GL.DeleteTexture(_textureId);
-            
-            GC.SuppressFinalize(this);
-        }
     }
 }
