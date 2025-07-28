@@ -7,6 +7,7 @@ namespace Plotter.UserControls
     internal partial class MyPlotter : MyPlotterBase
     {
         protected Dictionary<string, MyPlot> Plots = [];
+        public float TimeWindowSeconds { get; set; } = 10.0f;
 
         protected bool TestMode = false;
         protected string Debug = string.Empty;
@@ -25,10 +26,7 @@ namespace Plotter.UserControls
         MyPlot? cos;
 
 
-        /// <summary>
-        /// This is our hook to set plot-specific properties right before rendering.
-        /// It's called automatically by the base class's render loop for each plot.
-        /// </summary>
+        private float _maxTime = 0.0f;
         protected override void DrawPlots()
         {
             if (Plots.Count == 0) return;
@@ -39,21 +37,24 @@ namespace Plotter.UserControls
                 cos?.Add(Math.Cos(cos.XCounter * 1.1) * 500 + 512);
             }
 
+            _maxTime = Math.Max(_maxTime, Plots.Values.Max(p => p.LastX));
+
+            // 4. Define the viewport based on the current time and the zoom window.
+            float viewRight = _maxTime;
+            float viewLeft = viewRight - TimeWindowSeconds;
+            ViewPort = new RectangleF(viewLeft, -6, TimeWindowSeconds, 1030);
+
             int colorLocation = GL.GetUniformLocation(_plotShaderProgram, "uColor");
-
-            float lastX = MyPlot.LastX;
-            int windowSize = Plots.First().Value.WindowSize;
-
-            ViewPort = new(lastX - windowSize, -6, windowSize, 1030);
             foreach (var plot in Plots.Values)
             {
                 GL.Uniform4(colorLocation, plot.Colour);
+
                 plot.Render();
             }
 
-            Debug = $"Plots: {Plots.Count}, X: {lastX}, Window Size: {windowSize}";
+            Debug = $"Plots: {Plots.Count}, Time: {_maxTime:F2}, Window: {TimeWindowSeconds}s";
         }
-   
+
         protected override void DrawText()
             => fontRenderer?.RenderText(Debug, 10, 10);
 

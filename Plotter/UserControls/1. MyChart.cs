@@ -34,7 +34,7 @@ namespace Plotter.UserControls
                     Plots[kvp.Key] = plot;
                 }
 
-                plot.Add(textFrame.Time * 100, kvp.Value);
+                plot.Add(textFrame.Time, kvp.Value);
             }
 
         }
