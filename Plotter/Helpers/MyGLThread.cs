@@ -11,6 +11,19 @@ namespace Plotter
     //// </summary>
     internal class MyGLThread : IDisposable
     {
+        public Action? RenderAction
+        {
+            get => _renderAction;
+            set
+            {
+                if (_isRunning) throw new InvalidOperationException("Cannot change RenderAction while the thread is running.");
+
+                _renderAction = value;
+            }
+        }
+        private Action? _renderAction;
+
+
         private readonly Thread _thread;
         private readonly CancellationTokenSource _cts = new();
 
@@ -22,21 +35,12 @@ namespace Plotter
 
         private readonly GLControl _glControl;
 
-        public Action? RenderAction
-        {
-            get => _renderAction;
-            set
-            {   if (_isRunning) throw new InvalidOperationException("Cannot change RenderAction while the thread is running.");
-                
-                _renderAction = value;
-            }
-        }
-        private Action? _renderAction;
         private volatile bool _isRunning = false;
-
+        private int RefreshRate;
         public MyGLThread(GLControl glControl)
         {
             _glControl = glControl;
+
             _thread = new(Run)
             {
                 IsBackground = true,
@@ -48,6 +52,8 @@ namespace Plotter
                 // Ensure the GLControl is initialized before starting the thread
                 if (_glControl.Context == null)
                     throw new InvalidOperationException("GLControl context is not initialized.");
+
+                RefreshRate = ScreenHelper.GetCurrentRefreshRate(_glControl);
 
                 _glControl.Context.MakeNoneCurrent();
 
@@ -81,12 +87,12 @@ namespace Plotter
 
         private void Run()
         {
-            var mainTimer = new Stopwatch();
-            mainTimer.Start();
-            int second = 0;
+            var mainTimer = Stopwatch.StartNew();
 
+            int second = 0;
+            
             var stopwatch = new Stopwatch();
-            const double targetFrameTime = 1000.0 / 120.0; // Target 60 FPS 
+            double targetFrameTime = 1000.0 / RefreshRate; 
             long nTotalFrames = 0, nFramesThisSecond = 0;
             try
             {

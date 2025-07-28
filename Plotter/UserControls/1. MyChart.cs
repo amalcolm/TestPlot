@@ -1,10 +1,16 @@
-﻿using System.ComponentModel;
+﻿using Plotter.Fonts;
+using System.ComponentModel;
 
 namespace Plotter.UserControls
 {
     internal partial class MyChart : MyPlotter
     {
-        private const int WindowSize = 1000;
+        private const int WindowSize = 1200;
+
+        private readonly Dictionary<string, double> _latestValues = [];
+        private readonly Dictionary<string, Tuple<TextBlock, TextBlock>> _blocks = [];
+        private readonly List<TextBlock> _textBlocksToRender = [];
+
 
         public MyChart()
             => InitializeComponent();
@@ -32,14 +38,52 @@ namespace Plotter.UserControls
                 {
                     plot = new MyPlot(WindowSize, this);
                     Plots[kvp.Key] = plot;
+                    CreateTextBlocksForKey(kvp.Key);
                 }
 
                 plot.Add(textFrame.Time, kvp.Value);
+                _latestValues[kvp.Key] = kvp.Value;
             }
-
         }
 
 
 
+
+        private void CreateTextBlocksForKey(string key)
+        {
+            if (font == null) return;
+
+            string labelText = $"{key.Trim()}: ";
+
+            float yPos = MyGL.Height - 70 - (_blocks.Count*50);
+
+            var labelBlock = new TextBlock(labelText, 1000, yPos, font);
+
+            float labelWidth = font.MeasureString(labelText);
+            var valueBlock = new TextBlock("0.00", 1000 - labelWidth, yPos, font);
+            
+            _blocks[key] = Tuple.Create(labelBlock, valueBlock);
+        }
+
+        protected override void DrawText()
+        {
+            if (font == null) return;
+            
+            _textBlocksToRender.Clear();
+
+            foreach (var kvp in _latestValues)
+                if (_blocks.TryGetValue(kvp.Key, out var tuple))
+                {
+                    var labelBlock = tuple.Item1;
+                    var valueBlock = tuple.Item2;
+
+                    valueBlock.Text = kvp.Value.ToString("F2");
+
+                    _textBlocksToRender.Add(valueBlock);
+                    _textBlocksToRender.Add(labelBlock);
+                }
+
+            fontRenderer.RenderText(_textBlocksToRender);
+        }
     }
 }

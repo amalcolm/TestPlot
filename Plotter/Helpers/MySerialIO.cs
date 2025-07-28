@@ -116,7 +116,7 @@ namespace Plotter
             FindngStart = true;
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(4096);
 
-            stopwatch.Restart();
+            stopwatch.Start();
             while (SP?.IsOpen == true && !cancellationToken.IsCancellationRequested && isOpen)
             {
                 try

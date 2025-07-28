@@ -2,12 +2,15 @@
 
 namespace Plotter.Fonts
 {
-    struct TextBlock(string text, float x, float y, FontFile? font)
+    public enum TextAlign { Left, Right }
+
+    class TextBlock(string text, float x, float y, FontFile? font, TextAlign textAlign = TextAlign.Left)
     {
         public string    Text  = text;
         public FontFile  Font  = font ?? FontFile.Default;
         public float     X     = x;
         public float     Y     = y;
+        public TextAlign Align = textAlign;
     }
 
     internal class FontRenderer
@@ -41,20 +44,20 @@ namespace Plotter.Fonts
             GL.BindVertexArray(0);
         }
 
-        public void RenderText(string text, float x, float y, FontFile? font = null)
+        public void RenderText(string text, float x, float y, FontFile? font = null, TextAlign textAlign = TextAlign.Left)
         {   if (string.IsNullOrEmpty(text)) return;
 
             if (text != Text)
             { 
                 Text = text;
-                _vertices = FontVertex.BuildString(text, font ?? FontFile.Default, x, y);
+                _vertices = FontVertex.BuildString(text, font ?? FontFile.Default, x, y, textAlign);
                 BindVertices();
             }
             Render();
         }
 
         public void RenderText(TextBlock block)
-            => RenderText(block.Text, block.X, block.Y, block.Font);
+            => RenderText(block.Text, block.X, block.Y, block.Font, block.Align);
 
         public void RenderText(IEnumerable<TextBlock> blocks)
         {
@@ -65,7 +68,7 @@ namespace Plotter.Fonts
                 _vertices.Clear();
 
                 foreach (var block in blocks)
-                    _vertices.AddRange(FontVertex.BuildString(block.Text, block.Font, block.X, block.Y));
+                    _vertices.AddRange(FontVertex.BuildString(block.Text, block.Font, block.X, block.Y, block.Align));
 
                 BindVertices();
             }

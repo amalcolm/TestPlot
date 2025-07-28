@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Plotter
+﻿namespace Plotter
 {
     public class RunningAverage(int windowSize)
     {
@@ -37,10 +31,10 @@ namespace Plotter
             
             if (validSampleCount > 0)
             {
-                double average = runningSum / validSampleCount;
+                Average = runningSum / validSampleCount;
 
-                Min = average - 10;
-                Max = average + 10;
+                Min = Average - 10;
+                Max = Average + 10;
             }
             else
             {
@@ -61,6 +55,7 @@ namespace Plotter
             Max = 200;
         }
 
+        public double Average { get; private set; } = 0;
         public double Min { get; private set; } = 0;
         public double Max { get; private set; } = 200;
 

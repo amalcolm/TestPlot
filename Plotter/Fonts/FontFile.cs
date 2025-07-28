@@ -51,6 +51,24 @@ namespace Plotter.Fonts
         public float GetKerning(char first, char second) 
             => Kernings.TryGetValue(((int)first, (int)second), out var amount) ? amount : 0;
 
+        /// <summary>
+        /// Calculates the rendered width of a string in pixels based on the font's metrics.
+        /// </summary>
+        public float MeasureString(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return 0;
 
+            float width = 0;
+            for (int i = 0; i < text.Length; i++)
+                if (Chars.TryGetValue(text[i], out FontChar fc))
+                {
+                    width += fc.XAdvance;
+    
+                    if (i < text.Length - 1)
+                        width += GetKerning(text[i], text[i + 1]);
+                }
+
+            return width;
+        }
     }
 }
