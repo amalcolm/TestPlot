@@ -9,7 +9,7 @@ namespace Plotter.UserControls
         protected Dictionary<string, MyPlot> Plots = [];
 
         protected bool TestMode = false;
-        
+        protected string Debug = string.Empty;
         protected override void Init()
         {
             base.Init();
@@ -18,6 +18,7 @@ namespace Plotter.UserControls
 
             sin = Plots["Sine Wave"]   = new MyPlot(1000, this);
             cos = Plots["Cosine Wave"] = new MyPlot(1000, this);
+            Debug = "Test Mode: Sine and Cosine Waves";
 
         }
         MyPlot? sin;
@@ -40,7 +41,7 @@ namespace Plotter.UserControls
 
             int colorLocation = GL.GetUniformLocation(_plotShaderProgram, "uColor");
 
-            float lastX = (float)Plots.First().Value.XCounter;
+            float lastX = MyPlot.LastX;
             int windowSize = Plots.First().Value.WindowSize;
 
             ViewPort = new(lastX - windowSize, -6, windowSize, 1030);
@@ -49,13 +50,12 @@ namespace Plotter.UserControls
                 GL.Uniform4(colorLocation, plot.Colour);
                 plot.Render();
             }
+
+            Debug = $"Plots: {Plots.Count}, X: {lastX}, Window Size: {windowSize}";
         }
    
         protected override void DrawText()
-        {  
-            if (TestMode)
-                fontRenderer?.RenderText("Sine Wave", 10, 10);
-        }
+            => fontRenderer?.RenderText(Debug, 10, 10);
 
     }
 }

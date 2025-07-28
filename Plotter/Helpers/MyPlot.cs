@@ -5,6 +5,7 @@ namespace Plotter
 {
     internal class MyPlot
     {
+        public static volatile float LastX = 0;
         public Color Colour { get; set; } = MyColours.GetNextColour();
 
         private readonly object _lock = new();
@@ -69,20 +70,27 @@ namespace Plotter
             GL.BindVertexArray(0);
         }
 
+        public void Add(double y) => Add(_xCounter++, y);
+
         /// <summary>
         /// Adds a new Y data point to the plot. The X value is automatically incremented.
         /// </summary>
-        public void Add(double y)
+        public void Add(double x, double y)
         {
-//            lock (_lock)
+            lock (_lock)
             {
                 runningAverage.Add(y);
 
-                _vertexData[_currentIndex * 3 + 0] = (float)_xCounter;
-                _vertexData[_currentIndex * 3 + 1] = (float)y;
+                float fX = (float)x;
+                float fY = (float)y;
+
+                _vertexData[_currentIndex * 3 + 0] = fX;
+                _vertexData[_currentIndex * 3 + 1] = fY;
                 _vertexData[_currentIndex * 3 + 2] = 0.0f;
 
-                _xCounter++;
+                if (LastX < fX)
+                    LastX = fX;
+
                 if (_totalPoints < _maxVertices)
                     _totalPoints++;
 
@@ -109,7 +117,7 @@ namespace Plotter
         {
             if (_vaoHandle == 0 || _vboHandle == 0 || _totalPoints < 2) return;
 
-//            lock (_lock)
+            lock (_lock)
             {
                 GL.BindBuffer(BufferTarget.ArrayBuffer, _vboHandle);
                 GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, _vertexData.Length * sizeof(float), _vertexData);

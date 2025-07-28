@@ -25,7 +25,7 @@ namespace Plotter
 
             if (C == 'C')  // 0x43 for CTG data
             {
-                var status = ReadWord();
+                var _ = ReadWord();
                 HRmode = ReadWord();
                 TOCOmode = ReadByte();
                 SpO2 = ReadByte();

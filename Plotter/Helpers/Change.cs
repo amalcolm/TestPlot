@@ -35,7 +35,7 @@ namespace Plotter
             return baseFrame.Kind switch
             {
                 'C' => Change.To< C_Frame>(baseFrame),
-                'T' => Change.To< Test_Frame>(baseFrame),
+                'T' => Change.To< Text_Frame>(baseFrame),
                 _ => throw new Exception(MySerialIO.ERROR_FRAME_NOT_RECOGNISED)
             };
             

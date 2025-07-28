@@ -29,11 +29,9 @@ namespace Plotter
                 => (packet.Timestamp, packet.Data);
         }
 
-        public delegate void TextHandler(MySerialIO io, string text);
         public delegate void FrameHandler(MySerialIO io, MyFrame frame);
         public delegate void DataHandler(MySerialIO io, Packet packet);
 
-        public event TextHandler? TextReceived;
         public event FrameHandler? FrameReceived;
         public event DataHandler? DataReceived;
 
@@ -103,7 +101,7 @@ namespace Plotter
         MyFrame OutFrame = new(toWrite: true);
         bool IsContinuous = false;
         int nLastDataTick = 0;
-
+        Stopwatch stopwatch = new();
         private async Task StartReading(CancellationToken cancellationToken)
         {
             Debug.WriteLine("Reading task started.");
@@ -118,6 +116,7 @@ namespace Plotter
             FindngStart = true;
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(4096);
 
+            stopwatch.Restart();
             while (SP?.IsOpen == true && !cancellationToken.IsCancellationRequested && isOpen)
             {
                 try
@@ -205,11 +204,13 @@ namespace Plotter
                     ArrayPool<byte>.Shared.Return(rentedBuffer);
                 }
             }
+            stopwatch.Stop();
 
             isOpen = SP != null && SP.IsOpen;
 
             if (cancellationToken.IsCancellationRequested == false)
                 Error?.Invoke(this, ERROR_DISCONNECTED);
+
 
             Debug.WriteLine("Reading task exitted.");
 
@@ -277,6 +278,7 @@ namespace Plotter
         private void ProcessTextData(byte[] bytes)
         {
             byteBuffer.AddRange(bytes);
+            var time = stopwatch.Elapsed.TotalSeconds;
 
             while (true)
             {
@@ -293,11 +295,18 @@ namespace Plotter
                 }
 
                 // Get a slice of the span representing just the line. No copy.
-                var lineSpan = bufferSpan.Slice(0, lineLength);
+                var lineSpan = bufferSpan[..lineLength];
 
-                // Directly create a string from the span.
-                // This is the *only allocation* left in the loop.
-                TextReceived?.Invoke(this, Encoding.UTF8.GetString(lineSpan));
+
+                // This is the *only allocation* in the loop.
+                var textFrame = new Text_Frame
+                {
+                    Time = time,
+                    Text = Encoding.UTF8.GetString(lineSpan)
+                };
+
+                FrameReceived?.Invoke(this, textFrame);
+
 
                 // Efficiently remove the processed part of the list.
                 byteBuffer.RemoveRange(0, newlineIndex + 1);

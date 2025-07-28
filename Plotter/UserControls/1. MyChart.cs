@@ -15,29 +15,26 @@ namespace Plotter.UserControls
         private void MyChart_Load(object sender, EventArgs e)
         {
             IO = new();
-            IO.TextReceived += IO_TextReceived;
+            IO.FrameReceived += IO_FrameReceived;
         }
 
 
-        private void IO_TextReceived(MySerialIO io, string text)
+        private void IO_FrameReceived(MySerialIO io, MyFrame frame)
         {
             if (TestMode) return;
+            if (frame is not Text_Frame textFrame) return;
 
-            var data = MyTextParser.Parse(text); if (data == null) return;
+            var data = MyTextParser.Parse(textFrame.Text); if (data == null) return;
 
             foreach (var kvp in data)
             {
-                if (Plots.TryGetValue(kvp.Key, out var plot))
+                if (Plots.TryGetValue(kvp.Key, out var plot) == false)
                 {
-                    plot.Add(kvp.Value);
+                    plot = new MyPlot(WindowSize, this);
+                    Plots[kvp.Key] = plot;
                 }
-                else
-                {
-                    // Create a new plot if it doesn't exist
-                    var newPlot = new MyPlot(WindowSize, this);
-                    newPlot.Add(kvp.Value);
-                    Plots[kvp.Key] = newPlot;
-                }
+
+                plot.Add(textFrame.Time * 100, kvp.Value);
             }
 
         }
