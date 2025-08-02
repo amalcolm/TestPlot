@@ -69,16 +69,10 @@ namespace Plotter.Fonts
                 var bottomLeft  = _vertices[i + 2].Position;
                 var bottomRight = _vertices[i + 5].Position;
 
-                // With these three corners, we can define the character's bounding box.
-                float charMinX = bottomLeft.X;
-                float charMaxX = bottomRight.X;
-                float charMinY = bottomLeft.Y;
-                float charMaxY = topLeft.Y;
-
                 // Update the total bounds for the entire string.
                 minX = Math.Min(minX, bottomLeft.X);
-                minY = Math.Min(minY, bottomRight.X);
-                maxX = Math.Max(maxX, bottomLeft.Y);
+                minY = Math.Min(minY, bottomRight.Y);
+                maxX = Math.Max(maxX, bottomLeft.X);
                 maxY = Math.Max(maxY, topLeft.Y);
             }
 

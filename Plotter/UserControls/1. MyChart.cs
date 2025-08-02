@@ -1,4 +1,5 @@
-﻿using Plotter.Backgrounds;
+﻿using OpenTK.Mathematics;
+using Plotter.Backgrounds;
 using Plotter.Fonts;
 using System.ComponentModel;
 
@@ -76,26 +77,74 @@ namespace Plotter.UserControls
             _blocks[label] = Tuple.Create(labelBlock, valueBlock);
         }
 
-        private bool _labelsAreDirty = true;
         protected override void DrawText()
         {
             if (font == null) return;
-            
+
             _textBlocksToRender.Clear();
 
+            // 1. Populate the list of blocks to render and flag if their content has changed.
             foreach (var kvp in _latestValues)
+            {
                 if (_blocks.TryGetValue(kvp.Key, out var tuple))
                 {
-                    var labelBlock = tuple.Item1;
-                    var valueBlock = tuple.Item2;
-
-                    valueBlock.Text = kvp.Value.ToString("F2");
-
-                    _textBlocksToRender.Add(valueBlock);
-                    _textBlocksToRender.Add(labelBlock);
+                    string newText = kvp.Value.ToString("F2");
+                    if (tuple.Item2.Text != newText)
+                    {
+                        tuple.Item2.Text = newText; // This sets the 'dirty' flag inside the TextBlock
+                    }
+                    _textBlocksToRender.Add(tuple.Item1);
+                    _textBlocksToRender.Add(tuple.Item2);
                 }
+            }
 
-            _labelAreaRenderer.Render(_textBlocksToRender, font);
+            if (!_textBlocksToRender.Any()) return;
+
+            // 2. Calculate the total bounding box for all visible labels.
+            RectangleF totalBounds = CalculateTotalBounds(_textBlocksToRender);
+
+            // 3. Render the background with padding.
+            if (!totalBounds.IsEmpty)
+            {
+                float padding = 10f;
+                var paddedBounds = new RectangleF(
+                    totalBounds.X - padding,
+                    totalBounds.Y - padding,
+                    totalBounds.Width + (padding * 2),
+                    totalBounds.Height + (padding * 2)
+                );
+                var projection = Matrix4.CreateOrthographicOffCenter(0, MyGL.ClientSize.Width, 0, MyGL.ClientSize.Height, -1.0f, 1.0f);
+                _labelAreaRenderer.Render(paddedBounds, projection);
+            }
+
+            // 4. Render the text on top.
+            // This call uses the fontRenderer from the base MyGLControl,
+            // which correctly sets the text shader program before drawing.
+            fontRenderer.RenderText(_textBlocksToRender);
+        }
+
+        // Add this helper method inside the MyChart class
+        private RectangleF CalculateTotalBounds(List<TextBlock> blocks)
+        {
+            RectangleF totalBounds = RectangleF.Empty;
+
+            foreach (var block in blocks)
+            {
+                // GetVertices ensures the bounds are recalculated if the block is dirty
+                block.GetVertices();
+
+                if (block.Bounds.IsEmpty) continue;
+
+                if (totalBounds.IsEmpty)
+                {
+                    totalBounds = block.Bounds;
+                }
+                else
+                {
+                    totalBounds = RectangleF.Union(totalBounds, block.Bounds);
+                }
+            }
+            return totalBounds;
         }
     }
 }
