@@ -11,10 +11,11 @@ namespace TestPlot
             if (cbPorts.SelectedItem is string data)
             {
                 var io = myChart.IO;        if (io == null) { _LOG_ERROR("No IO instance available"); return; }
+                io.DataReceived -= Io_OnData;
 
                 await io.SetPort(data);
+                io.Connect();
 
-                io.DataReceived -= Io_OnData;
                 if (io.isOpen)
                     io.DataReceived += Io_OnData;
           }

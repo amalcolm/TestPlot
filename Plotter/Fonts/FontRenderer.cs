@@ -1,4 +1,5 @@
 ﻿using OpenTK.Graphics.OpenGL4;
+using System.ComponentModel;
 
 namespace Plotter.Fonts
 {
@@ -6,15 +7,52 @@ namespace Plotter.Fonts
 
     class TextBlock(string text, float x, float y, FontFile? font, TextAlign textAlign = TextAlign.Left)
     {
-        public string    Text  = text;
-        public FontFile  Font  = font ?? FontFile.Default;
-        public float     X     = x;
-        public float     Y     = y;
-        public TextAlign Align = textAlign;
+        public string    Text  {get => _text;  set { if (_text  != value) { _text  = value; Changed(nameof(Text )); } } }
+        public FontFile  Font  {get => _font;  set { if (_font  != value) { _font  = value; Changed(nameof(Font )); } } }
+        public float     X     {get => _x;     set { if (_x     != value) { _x     = value; Changed(nameof(X    )); } } }
+        public float     Y     {get => _y;     set { if (_y     != value) { _y     = value; Changed(nameof(Y    )); } } }
+        public TextAlign Align {get => _align; set { if (_align != value) { _align = value; Changed(nameof(Align)); } } }
+
+        private string    _text  = text;
+        private FontFile  _font  = font ?? FontFile.Default;
+        private float     _x     = x;
+        private float     _y     = y;
+        private TextAlign _align = textAlign;
+
+        public int hashCode { get; private set; } = 0;
+        private void Changed(string _)
+        {
+            _hasChanged = true;
+            hashCode = (Text, $"{Font.Face}{Font.Size}", X, Y, Align).GetHashCode();
+        }
+        private bool _hasChanged = false;
+
+        override public int GetHashCode() => hashCode;
+        override public string ToString() => $"{Text} ({X}, {Y}) [{Font.Face} {Font.Size}] {Align}";
+        override public bool Equals(object? obj)
+        {
+            if (obj is TextBlock other)
+                return hashCode == other.hashCode;
+            return false;
+        }
+
+        private List<FontVertex> vertices = [];
+
+        public List<FontVertex> GetVertices(float scaling = 0.5f)
+        {
+            if (_hasChanged || vertices.Count == 0)
+            {
+                vertices = FontVertex.BuildString(Text, Font, X, Y, scaling, Align);
+                _hasChanged = false;
+            }
+            return vertices;
+        }
     }
 
     internal class FontRenderer
     {
+        public float Scaling { get; set; } = 0.5f;
+
         private int _vbo;
         private int _vao;
         private int _vertexCount = 0;
@@ -25,7 +63,6 @@ namespace Plotter.Fonts
 
 
         private List<FontVertex> _vertices = [];
-
         public void Init()
         {
             _vao = GL.GenVertexArray();
@@ -50,7 +87,7 @@ namespace Plotter.Fonts
             if (text != Text)
             { 
                 Text = text;
-                _vertices = FontVertex.BuildString(text, font ?? FontFile.Default, x, y, textAlign);
+                _vertices = FontVertex.BuildString(text, font ?? FontFile.Default, x, y, Scaling, textAlign);
                 BindVertices();
             }
             Render();
@@ -61,17 +98,14 @@ namespace Plotter.Fonts
 
         public void RenderText(IEnumerable<TextBlock> blocks)
         {
-            var text = string.Join("\n", blocks.Select(b => b.Text));
-            if (text != Text)
-            {
-                Text = text;
-                _vertices.Clear();
+            Text = "";
+            _vertices.Clear();
 
-                foreach (var block in blocks)
-                    _vertices.AddRange(FontVertex.BuildString(block.Text, block.Font, block.X, block.Y, block.Align));
+            foreach (var block in blocks)
+                _vertices.AddRange(block.GetVertices());
 
-                BindVertices();
-            }
+            BindVertices();
+        
             Render();
         }
 

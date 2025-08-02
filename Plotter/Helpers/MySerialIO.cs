@@ -38,7 +38,10 @@ namespace Plotter
         public event EventHandler<string>? Error;
 
         private SerialPort SP { get; set; } = default!;
+        private string _currentPortName = string.Empty;
         private CancellationTokenSource? readCancellation;
+
+        private Task? _readingTask;
 
         public bool isOpen { get; private set; } = false;
         public bool FindngStart = true;
@@ -52,14 +55,25 @@ namespace Plotter
             SocketWatcher.StartListening();
         }
 
-        public async Task<bool> SetPort(string port)
+        public async Task SetPort(string newPortName)
         {
+            if (string.IsNullOrEmpty(newPortName)) throw new ArgumentNullException(nameof(newPortName));
+
+            if (isOpen)
+                await Close();
+
+            _currentPortName = newPortName;
+        }
+
+        public void Connect()
+        {
+            if (isOpen) return;
+            if (string.IsNullOrEmpty(_currentPortName))
+                throw new InvalidOperationException("Port has not been set. Call SetPort() before connecting.");
+
             try
             {
-                if (SP != null && SP.IsOpen)
-                    await Close();
-
-                SP = new SerialPort(port)
+                SP = new SerialPort(_currentPortName)
                 {
                     BaudRate = 1200,
                     DataBits = 8,
@@ -69,30 +83,20 @@ namespace Plotter
                     ReadTimeout = 1500
                 };
 
-                Connect();
+                // Now, open the port and start the reading task.
+                SP.Open();
+                isOpen = SP.IsOpen;
 
-                return isOpen;
+                if (isOpen)
+                {
+                    readCancellation = new();
+                    _readingTask = StartReading(readCancellation.Token);
+                }
             }
             catch (Exception ex)
             {
                 Error?.Invoke(this, ex.Message);
-                return false;
-            }
-
-        }
-
-        public void Connect()
-        {
-            if (isOpen) return;
-
-            SP.Open();
-
-            isOpen = SP.IsOpen;
-
-            if (isOpen)
-            {
-                readCancellation = new();
-                _ = StartReading(readCancellation.Token);
+                isOpen = false;
             }
         }
 
@@ -116,97 +120,97 @@ namespace Plotter
             FindngStart = true;
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(4096);
 
-            stopwatch.Start();
-            while (SP?.IsOpen == true && !cancellationToken.IsCancellationRequested && isOpen)
+            try
             {
-                try
+                stopwatch.Start();
+
+                while (SP?.IsOpen == true && !cancellationToken.IsCancellationRequested && isOpen)
                 {
-                    int size = SP.BytesToRead;
-
-                    if (size > 0)
+                    try
                     {
-                        packetStartTime ??= DateTime.Now;
+                        int size = SP.BytesToRead;
 
-                        // Make sure we don't read more than our buffer can hold
-                        int bytesToRead = Math.Min(size, rentedBuffer.Length);
-                        int bytesRead = SP.Read(rentedBuffer, 0, bytesToRead);
-
-                        // Add the segment of the buffer that contains new data
-                        currentPacket.AddRange(rentedBuffer.Take(bytesRead)); // Still allocates, but let's fix the next part first
-
-                        nLastDataTick = Environment.TickCount;
-                        continue;
-                    }
-
-                    // If we have data but see no new bytes, we've found a gap
-                    if (currentPacket.Count > 0 && packetStartTime.HasValue)
-                    {
-                        ProcessData(packetStartTime.Value, [.. currentPacket]);
-
-                        currentPacket.Clear();
-                        packetStartTime = null;
-                    }
-
-                    if (IsContinuous && (Environment.TickCount - nLastDataTick > 2000))
-                    {
-                        string message = ERROR_TIMEOUT;
-                        nLastDataTick = Environment.TickCount; // avoid avalanche of messages
-
-                        try
+                        if (size > 0)
                         {
-                            if (SP.IsOpen)
+                            packetStartTime ??= DateTime.Now;
+
+                            // Make sure we don't read more than our buffer can hold
+                            int bytesToRead = Math.Min(size, rentedBuffer.Length);
+                            int bytesRead = SP.Read(rentedBuffer, 0, bytesToRead);
+
+                            // Add the segment of the buffer that contains new data
+                            currentPacket.AddRange(rentedBuffer.Take(bytesRead));
+
+                            nLastDataTick = Environment.TickCount;
+                            continue;
+                        }
+
+                        // If we have data but see no new bytes, we've found a gap
+                        if (currentPacket.Count > 0 && packetStartTime.HasValue)
+                        {
+                            ProcessData(packetStartTime.Value, [.. currentPacket]);
+
+                            currentPacket.Clear();
+                            packetStartTime = null;
+                        }
+
+                        if (IsContinuous && (Environment.TickCount - nLastDataTick > 2000))
+                        {
+                            string message = ERROR_TIMEOUT;
+                            nLastDataTick = Environment.TickCount; // avoid avalanche of messages
+
+                            try
                             {
-                                SP.DiscardOutBuffer();
+                                if (SP.IsOpen)
+                                {
+                                    SP.DiscardOutBuffer();
+                                }
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            message += $"\r\n  System Error:\r\n\r\n\t{ex.Message}";
+                            catch (Exception ex)
+                            {
+                                message += $"\r\n  System Error:\r\n\r\n\t{ex.Message}";
+                            }
+
+                            throw new Exception(message);
+
                         }
 
-                        throw new Exception(message);
-
+                        // Wait one system tick ; '1' being less than the tick length
+                        await Task.Delay(1, cancellationToken);
                     }
-
-                    // Wait one system tick ; '1' being less than the tick length
-                    await Task.Delay(1, cancellationToken);
-                }
-                catch (TaskCanceledException)
-                {
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    var header = ex.Message.StartsWith("!") ? string.Empty : $"!Error reading from CTG: ";
-                    var message = $"{header}{ex.Message}";
-                    Error?.Invoke(this, message);
-
-                    if (ex.Message == ERROR_TIMEOUT)
-                        continue;
-
-                    if (ex.Message == ERROR_FRAME_NOT_RECOGNISED)
+                    catch (TaskCanceledException)
                     {
-                        currentPacket.Clear();
-                        SP.DiscardInBuffer();
-                        continue;
+                        break;
                     }
+                    catch (Exception ex)
+                    {
+                        var header = ex.Message.StartsWith("!") ? string.Empty : $"!Error reading from CTG: ";
+                        var message = $"{header}{ex.Message}";
+                        Error?.Invoke(this, message);
 
-                    await Task.Delay(100, cancellationToken);
-                    readCancellation?.Cancel();
+                        if (ex.Message == ERROR_TIMEOUT)
+                            continue;
 
-                    if (SP.IsOpen)
-                        SP.Close();
+                        if (ex.Message == ERROR_FRAME_NOT_RECOGNISED)
+                        {
+                            currentPacket.Clear();
+                            SP.DiscardInBuffer();
+                            continue;
+                        }
 
-                    break;
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                        await Task.Delay(100, cancellationToken);
+                        readCancellation?.Cancel();
+
+
+                        break;
+                    }
                 }
             }
-            stopwatch.Stop();
-
-            isOpen = SP != null && SP.IsOpen;
+            finally
+            {
+                stopwatch.Stop();
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
 
             if (cancellationToken.IsCancellationRequested == false)
                 Error?.Invoke(this, ERROR_DISCONNECTED);
@@ -382,26 +386,27 @@ namespace Plotter
 
         public async Task Close()
         {
-            if (isOpen)
+            if (isOpen && _readingTask != null)
             {
                 readCancellation?.Cancel();
-                await Task.Delay(500).ConfigureAwait(false);
 
                 try
                 {
-                    using var cts = new CancellationTokenSource(1000);
-                    await Task.Run(() => { if (SP.IsOpen) SP.Close(); }, cts.Token).ConfigureAwait(false);
+                    await _readingTask;
                 }
+                catch (TaskCanceledException) { }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Close error: {ex.Message}");
+                    // Log other exceptions from the reading task if you want
+                    Debug.WriteLine($"Exception during reading task shutdown: {ex.Message}");
                 }
-                finally
-                {
-                    isOpen = false;  // Force state to closed regardless of what SP.Shutdown did
-                }
+
+                SP?.Dispose();
+                SP = default!;
+                isOpen = false;
+                _readingTask = null;
             }
-        }
+        }        
 
         /// <summary>
         /// Gets a list of all present USB serial devices that match the known vendor IDs.

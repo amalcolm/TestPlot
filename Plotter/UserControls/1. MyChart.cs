@@ -38,7 +38,7 @@ namespace Plotter.UserControls
                 {
                     plot = new MyPlot(WindowSize, this);
                     Plots[kvp.Key] = plot;
-                    CreateTextBlocksForKey(kvp.Key);
+                    CreateTextBlocksForLabel(kvp.Key);
                 }
 
                 plot.Add(textFrame.Time, kvp.Value);
@@ -49,20 +49,18 @@ namespace Plotter.UserControls
 
 
 
-        private void CreateTextBlocksForKey(string key)
+        private void CreateTextBlocksForLabel(string label)
         {
             if (font == null) return;
 
-            string labelText = $"{key.Trim()}: ";
+            string labelText = $": {label.Trim()}";
 
             float yPos = MyGL.Height - 70 - (_blocks.Count*50);
 
-            var labelBlock = new TextBlock(labelText, 1000, yPos, font);
-
-            float labelWidth = font.MeasureString(labelText);
-            var valueBlock = new TextBlock("0.00", 1000 - labelWidth, yPos, font);
+            var labelBlock = new TextBlock(labelText, 106, yPos, font);
+            var valueBlock = new TextBlock("0.00", 100 , yPos, font, TextAlign.Right);
             
-            _blocks[key] = Tuple.Create(labelBlock, valueBlock);
+            _blocks[label] = Tuple.Create(labelBlock, valueBlock);
         }
 
         protected override void DrawText()

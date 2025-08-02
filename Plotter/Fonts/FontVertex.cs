@@ -7,7 +7,7 @@ namespace Plotter.Fonts
         public Vector2 Position; // The (X, Y) position on the screen
         public Vector2 TexCoord; // The (U, V) coordinate on the font atlas texture
 
-        public static List<FontVertex> BuildString(string text, FontFile font, float startX, float startY, TextAlign textAlign = TextAlign.Right)
+        public static List<FontVertex> BuildString(string text, FontFile font, float startX, float startY, float scaling = 1.0f, TextAlign textAlign = TextAlign.Right)
         {
             var vertices = new List<FontVertex>();
             if (string.IsNullOrEmpty(text))
@@ -24,10 +24,10 @@ namespace Plotter.Fonts
                     if (!font.Chars.TryGetValue(text[i], out FontChar fc)) continue;
 
                     if (i > 0)
-                        cursor.X += font.GetKerning(text[i - 1], text[i]);
+                        cursor.X += font.GetKerning(text[i - 1], text[i]) * scaling;
 
-                    BuildChar(vertices, fc, cursor, font, texWidth, texHeight);
-                    cursor.X += fc.XAdvance;
+                    BuildChar(vertices, fc, cursor, scaling, font, texWidth, texHeight);
+                    cursor.X += fc.XAdvance * scaling;
                 }
             }
             else 
@@ -36,38 +36,36 @@ namespace Plotter.Fonts
                 {
                     if (!font.Chars.TryGetValue(text[i], out FontChar fc)) continue;
 
-                    cursor.X -= fc.XAdvance;
+                    cursor.X -= fc.XAdvance * scaling;
 
                     if (i > 0)
-                        cursor.X += font.GetKerning(text[i - 1], text[i]);
+                        cursor.X += font.GetKerning(text[i - 1], text[i]) * scaling;
 
-                    BuildChar(vertices, fc, cursor, font, texWidth, texHeight);
+                    BuildChar(vertices, fc, cursor, scaling, font, texWidth, texHeight);
                 }
             }
             return vertices;
         }
 
-        private static void BuildChar(List<FontVertex> vertices, FontChar fontChar, Vector2 cursor, FontFile font, float texWidth, float texHeight)
+        private static void BuildChar(List<FontVertex> vertices, FontChar fontChar, Vector2 cursor, float scaling, FontFile font, float texWidth, float texHeight)
         { 
+            float x_pos  = cursor.X + scaling *  fontChar.XOffset;
+            float y_pos  = cursor.Y - scaling * (fontChar.YOffset - font.Base + fontChar.Height); 
+            float width  = fontChar.Width  * scaling;
+            float height = fontChar.Height * scaling;
 
-            float x      = cursor.X + fontChar.XOffset;
-            float y      = cursor.Y - fontChar.YOffset - fontChar.Height + font.Base;
-            float width  = fontChar.Width ;
-            float height = fontChar.Height;
-
-            // These are normalized from 0.0 to 1.0
-            float u1 =  fontChar.X           / texWidth;
-            float v1 =  fontChar.Y           / texHeight;
-            float u2 = (fontChar.X + width)  / texWidth;
-            float v2 = (fontChar.Y + height) / texHeight;
+            float u1 =  fontChar.X                    / texWidth;
+            float v1 =  fontChar.Y                    / texHeight;
+            float u2 = (fontChar.X + fontChar.Width ) / texWidth;
+            float v2 = (fontChar.Y + fontChar.Height) / texHeight;
 
             // Add six vertices for two triangles (quad) for this character
-            vertices.Add(new FontVertex { Position = new Vector2(x        , y + height),   /* Top   -left  */  TexCoord = new Vector2(u1, v1) });
-            vertices.Add(new FontVertex { Position = new Vector2(x + width, y         ),   /* Bottom-right */  TexCoord = new Vector2(u2, v2) });
-            vertices.Add(new FontVertex { Position = new Vector2(x        , y         ),   /* Bottom-left  */  TexCoord = new Vector2(u1, v2) });
-            vertices.Add(new FontVertex { Position = new Vector2(x        , y + height),   /* Top   -left  */  TexCoord = new Vector2(u1, v1) });
-            vertices.Add(new FontVertex { Position = new Vector2(x + width, y + height),   /* Top   -right */  TexCoord = new Vector2(u2, v1) });
-            vertices.Add(new FontVertex { Position = new Vector2(x + width, y         ),   /* Bottom-right */  TexCoord = new Vector2(u2, v2) });
+            vertices.Add(new FontVertex { Position = new Vector2(x_pos        , y_pos + height),   /* Top-left      */  TexCoord = new Vector2(u1, v1) });
+            vertices.Add(new FontVertex { Position = new Vector2(x_pos + width, y_pos         ),   /* Bottom-right  */  TexCoord = new Vector2(u2, v2) });
+            vertices.Add(new FontVertex { Position = new Vector2(x_pos        , y_pos         ),   /* Bottom-left   */  TexCoord = new Vector2(u1, v2) });
+            vertices.Add(new FontVertex { Position = new Vector2(x_pos        , y_pos + height),   /* Top-left      */  TexCoord = new Vector2(u1, v1) });
+            vertices.Add(new FontVertex { Position = new Vector2(x_pos + width, y_pos + height),   /* Top-right     */  TexCoord = new Vector2(u2, v1) });
+            vertices.Add(new FontVertex { Position = new Vector2(x_pos + width, y_pos         ),   /* Bottom-right  */  TexCoord = new Vector2(u2, v2) });
 
 
         }
