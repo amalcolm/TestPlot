@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using Plotter.Backgrounds;
 using Plotter.Fonts;
 using System.ComponentModel;
@@ -99,7 +100,7 @@ namespace Plotter.UserControls
             }
 
             if (!_textBlocksToRender.Any()) return;
-
+            
             // 2. Calculate the total bounding box for all visible labels.
             RectangleF totalBounds = CalculateTotalBounds(_textBlocksToRender);
 
@@ -114,13 +115,15 @@ namespace Plotter.UserControls
                     totalBounds.Height + (padding * 2)
                 );
                 var projection = Matrix4.CreateOrthographicOffCenter(0, MyGL.ClientSize.Width, 0, MyGL.ClientSize.Height, -1.0f, 1.0f);
+                
                 _labelAreaRenderer.Render(paddedBounds, projection);
+
+                GL.UseProgram(_textShaderProgram);
             }
 
-            // 4. Render the text on top.
-            // This call uses the fontRenderer from the base MyGLControl,
-            // which correctly sets the text shader program before drawing.
             fontRenderer.RenderText(_textBlocksToRender);
+
+
         }
 
         // Add this helper method inside the MyChart class

@@ -62,21 +62,22 @@ namespace Plotter.Fonts
             float minX = float.MaxValue, minY = float.MaxValue;
             float maxX = float.MinValue, maxY = float.MinValue;
 
-            // Iterate through the vertices in strides of 6 (one character quad at a time).
             for (int i = 0; i < _vertices.Count; i += 6)
             {
-                var    topLeft  = _vertices[i].Position;
-                var bottomLeft  = _vertices[i + 2].Position;
+                var topLeft = _vertices[i].Position;
+                var bottomLeft = _vertices[i + 2].Position;
                 var bottomRight = _vertices[i + 5].Position;
 
-                // Update the total bounds for the entire string.
+                // --- THE SIZING FIX ---
+                // Correctly use X for horizontal and Y for vertical min/max
                 minX = Math.Min(minX, bottomLeft.X);
-                minY = Math.Min(minY, bottomRight.Y);
-                maxX = Math.Max(maxX, bottomLeft.X);
+                minY = Math.Min(minY, bottomLeft.Y);
+                maxX = Math.Max(maxX, bottomRight.X);
                 maxY = Math.Max(maxY, topLeft.Y);
             }
 
             Bounds = new RectangleF(minX, minY, maxX - minX, maxY - minY);
         }
+ 
     }
 }

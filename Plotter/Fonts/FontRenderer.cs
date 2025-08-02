@@ -38,6 +38,9 @@ namespace Plotter.Fonts
         public void RenderText(string text, float x, float y, FontFile? font = null, TextAlign textAlign = TextAlign.Left)
         {   if (string.IsNullOrEmpty(text)) return;
 
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, font?.TextureId ?? FontFile.Default.TextureId);
+
             if (text != Text)
             { 
                 Text = text;
@@ -54,6 +57,9 @@ namespace Plotter.Fonts
         {
             Text = "";
             _vertices.Clear();
+
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, blocks.FirstOrDefault()?.Font.TextureId ?? FontFile.Default.TextureId);
 
             foreach (var block in blocks)
                 _vertices.AddRange(block.GetVertices());

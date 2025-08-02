@@ -47,14 +47,10 @@ namespace Plotter.Backgrounds
             GL.UniformMatrix4(GL.GetUniformLocation(_bgShaderProgram, "uTransform"), false, ref projection);
             GL.Uniform1(GL.GetUniformLocation(_bgShaderProgram, "uTexture"), 0);
 
-            GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
             UpdateBackgroundVertices(bounds);
             GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 4);
 
             // Clean up state
-            GL.Disable(EnableCap.Blend);
             GL.BindVertexArray(0);
         }
 
@@ -64,10 +60,10 @@ namespace Plotter.Backgrounds
             float[] vertices =
             [
                 bounds.Left,  bounds.Bottom,  0.0f, 1.0f,
-            bounds.Left,  bounds.Top,     0.0f, 0.0f,
-            bounds.Right, bounds.Bottom,  1.0f, 1.0f,
-            bounds.Right, bounds.Top,     1.0f, 0.0f,
-        ];
+                bounds.Left,  bounds.Top,     0.0f, 0.0f,
+                bounds.Right, bounds.Bottom,  1.0f, 1.0f,
+                bounds.Right, bounds.Top,     1.0f, 0.0f,
+            ];
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, _bgVbo);
             GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, vertices.Length * sizeof(float), vertices);
