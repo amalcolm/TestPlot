@@ -59,15 +59,13 @@ namespace Plotter.Fonts
             float u2 = (fontChar.X + fontChar.Width ) / texWidth;
             float v2 = (fontChar.Y + fontChar.Height) / texHeight;
 
-            // Add six vertices for two triangles (quad) for this character
+            // Add six _vertices for two triangles (quad) for this character
             vertices.Add(new FontVertex { Position = new Vector2(x_pos        , y_pos + height),   /* Top-left      */  TexCoord = new Vector2(u1, v1) });
             vertices.Add(new FontVertex { Position = new Vector2(x_pos + width, y_pos         ),   /* Bottom-right  */  TexCoord = new Vector2(u2, v2) });
             vertices.Add(new FontVertex { Position = new Vector2(x_pos        , y_pos         ),   /* Bottom-left   */  TexCoord = new Vector2(u1, v2) });
             vertices.Add(new FontVertex { Position = new Vector2(x_pos        , y_pos + height),   /* Top-left      */  TexCoord = new Vector2(u1, v1) });
             vertices.Add(new FontVertex { Position = new Vector2(x_pos + width, y_pos + height),   /* Top-right     */  TexCoord = new Vector2(u2, v1) });
             vertices.Add(new FontVertex { Position = new Vector2(x_pos + width, y_pos         ),   /* Bottom-right  */  TexCoord = new Vector2(u2, v2) });
-
-
         }
     }
 }

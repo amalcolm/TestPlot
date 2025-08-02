@@ -1,4 +1,5 @@
-﻿using Plotter.Fonts;
+﻿using Plotter.Backgrounds;
+using Plotter.Fonts;
 using System.ComponentModel;
 
 namespace Plotter.UserControls
@@ -11,6 +12,7 @@ namespace Plotter.UserControls
         private readonly Dictionary<string, Tuple<TextBlock, TextBlock>> _blocks = [];
         private readonly List<TextBlock> _textBlocksToRender = [];
 
+        private LabelAreaRenderer _labelAreaRenderer = default!;
 
         public MyChart()
             => InitializeComponent();
@@ -24,6 +26,17 @@ namespace Plotter.UserControls
             IO.FrameReceived += IO_FrameReceived;
         }
 
+        protected override void Init()
+        {
+            base.Init();
+            _labelAreaRenderer = new (this, "Resources/Backgrounds/LabelArea.png");
+        }
+
+        protected override void Shutdown()
+        {
+            base.Shutdown();
+            _labelAreaRenderer?.Shutdown();
+        }
 
         private void IO_FrameReceived(MySerialIO io, MyFrame frame)
         {
@@ -63,6 +76,7 @@ namespace Plotter.UserControls
             _blocks[label] = Tuple.Create(labelBlock, valueBlock);
         }
 
+        private bool _labelsAreDirty = true;
         protected override void DrawText()
         {
             if (font == null) return;
@@ -81,7 +95,7 @@ namespace Plotter.UserControls
                     _textBlocksToRender.Add(labelBlock);
                 }
 
-            fontRenderer.RenderText(_textBlocksToRender);
+            _labelAreaRenderer.Render(_textBlocksToRender, font);
         }
     }
 }

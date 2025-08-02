@@ -39,6 +39,12 @@
 		<None Update="Resources\Segoe UI.png">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+		<None Update="Resources\Shaders\back.frag">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Resources\Shaders\back.vert">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Resources\Shaders\font.frag">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
