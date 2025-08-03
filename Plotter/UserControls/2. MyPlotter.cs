@@ -48,7 +48,7 @@ namespace Plotter.UserControls
             var timeDelta = _maxTime - _lastMaxTime;
             _lastMaxTime = _maxTime;
 
-            // Add the delta to our smoother
+            // Return the delta to our smoother
             _timeDeltaSmoother.Add(timeDelta);
 
             // Advance the right edge of our viewport by the smoothed delta

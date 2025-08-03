@@ -7,10 +7,10 @@ namespace Plotter.Fonts
         public Vector2 Position; // The (X, Y) position on the screen
         public Vector2 TexCoord; // The (U, V) coordinate on the font atlas texture
 
-        public static List<FontVertex> BuildString(string text, FontFile font, float startX, float startY, float scaling = 1.0f, TextAlign textAlign = TextAlign.Right)
+        public static List<FontVertex> BuildString(List<FontVertex> vertices, AString text, FontFile font, float startX, float startY, float scaling = 1.0f, TextAlign textAlign = TextAlign.Right)
         {
-            var vertices = new List<FontVertex>();
-            if (string.IsNullOrEmpty(text))
+            vertices.Clear();
+            if (text.Length == 0)
                 return vertices;
 
             var cursor = new Vector2(startX, startY);
@@ -59,7 +59,7 @@ namespace Plotter.Fonts
             float u2 = (fontChar.X + fontChar.Width ) / texWidth;
             float v2 = (fontChar.Y + fontChar.Height) / texHeight;
 
-            // Add six _vertices for two triangles (quad) for this character
+            // Return six _vertices for two triangles (quad) for this character
             vertices.Add(new FontVertex { Position = new Vector2(x_pos        , y_pos + height),   /* Top-left      */  TexCoord = new Vector2(u1, v1) });
             vertices.Add(new FontVertex { Position = new Vector2(x_pos + width, y_pos         ),   /* Bottom-right  */  TexCoord = new Vector2(u2, v2) });
             vertices.Add(new FontVertex { Position = new Vector2(x_pos        , y_pos         ),   /* Bottom-left   */  TexCoord = new Vector2(u1, v2) });

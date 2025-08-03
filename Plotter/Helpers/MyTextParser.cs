@@ -1,41 +1,79 @@
-﻿
+﻿using System.Globalization;
+
 namespace Plotter
 {
     internal static class MyTextParser
     {
-        public static Dictionary<string, double> Data { get; } = [];
-        public static Dictionary<string, double> Parse(string text)
+        // Caller supplies (and reuses) the dictionary so we don’t keep a big static one alive.
+        public static void Parse(string text, Dictionary<string, double> target)
         {
-            // Get a ReadOnlySpan from the input string to avoid allocations
-            ReadOnlySpan<char> textSpan = text.AsSpan();
+            target.Clear();                     // caller decides whether to clear
+            ReadOnlySpan<char> span = text;     // same as text.AsSpan()
 
-            // Loop through tab-separated parts without using Split()
-            while (true)
+            while (!span.IsEmpty)
             {
-                int tabIndex = textSpan.IndexOf('\t');
+                int tab = span.IndexOf('\t');
+                ReadOnlySpan<char> part = tab < 0 ? span : span[..tab];
 
-                // Get the part before the tab, or the rest of the string if no tab is found
-                ReadOnlySpan<char> part = (tabIndex == -1) ? textSpan : textSpan[..tabIndex];
-
-                // -- Process the key-value pair from the 'part' span --
-                int colonIndex = part.IndexOf(':');
-                if (colonIndex != -1)
+                int colon = part.IndexOf(':');
+                if (colon > 0)
                 {
-                    ReadOnlySpan<char> fieldSpan = part[..colonIndex];
-                    ReadOnlySpan<char> valueSpan = part[(colonIndex + 1)..];
+                    ReadOnlySpan<char> fieldSpan = part[..colon];
+                    ReadOnlySpan<char> valueSpan = part[(colon + 1)..];
 
-                    if (double.TryParse(valueSpan.ToString(), out double parsedValue))
-                        Data[fieldSpan.ToString()] = parsedValue;
+                    // — no allocation here —
+                    if (double.TryParse(valueSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+                    {
+                        target[OptimizedStringStorage.Get(fieldSpan)] = value;
+                    }
                 }
 
-                if (tabIndex == -1) break;
-                textSpan = textSpan[(tabIndex + 1)..];
+                if (tab < 0) break;
+                span = span[(tab + 1)..];
+            }
+        }
+    }
+
+
+    public class OptimizedStringStorage
+    {
+        // A dictionary mapping a hash code to a list of strings that share that hash code.
+        private static readonly Dictionary<int, List<string>> _buckets = [];
+
+        /// <summary>
+        /// Retrieves a cached string matching the span, or creates and caches a new one.
+        /// Lookup performance is O(1) on average.
+        /// </summary>
+        public static string Get(ReadOnlySpan<char> span)
+        {
+            // 1. Get the hash code for the span without converting it to a string.
+            int hashCode = string.GetHashCode(span);
+
+            // 2. Look for a bucket with this hash code.
+            if (_buckets.TryGetValue(hashCode, out var bucket))
+            {
+                // 3. A bucket exists. Check all strings within it (to handle hash collisions).
+                foreach (string s in bucket)
+                {
+                    if (span.SequenceEqual(s))
+                    {
+                        return s; // Match found, return the cached string.
+                    }
+                }
             }
 
-            return Data;
+            // 4. No match found. Allocate the new string.
+            string newString = span.ToString();
+
+            // 5. Return the new string to the correct bucket.
+            if (bucket == null)
+            {
+                bucket = [];
+                _buckets[hashCode] = bucket;
+            }
+            bucket.Add(newString);
+
+            return newString;
         }
-
-
-        private static string _text = string.Empty;
     }
 }

@@ -138,7 +138,7 @@ namespace Plotter
                             int bytesToRead = Math.Min(size, rentedBuffer.Length);
                             int bytesRead = SP.Read(rentedBuffer, 0, bytesToRead);
 
-                            // Add the segment of the buffer that contains new data
+                            // Return the segment of the buffer that contains new data
                             currentPacket.AddRange(rentedBuffer.Take(bytesRead));
 
                             nLastDataTick = Environment.TickCount;

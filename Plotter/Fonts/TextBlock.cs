@@ -3,9 +3,9 @@ namespace Plotter.Fonts
 {
     public enum TextAlign { Left, Right }
 
-    class TextBlock(string text, float x, float y, FontFile? font, TextAlign textAlign = TextAlign.Left)
+    class TextBlock(AString text, float x, float y, FontFile? font, TextAlign textAlign = TextAlign.Left)
     {
-        public string    Text  {get => _text;  set { if (_text  != value) { _text  = value; Changed(nameof(Text )); } } }
+        public AString   Text  {get => _text;  set { if (_text  != value) { _text  = value; Changed(nameof(Text )); } } }
         public FontFile  Font  {get => _font;  set { if (_font  != value) { _font  = value; Changed(nameof(Font )); } } }
         public float     X     {get => _x;     set { if (_x     != value) { _x     = value; Changed(nameof(X    )); } } }
         public float     Y     {get => _y;     set { if (_y     != value) { _y     = value; Changed(nameof(Y    )); } } }
@@ -14,7 +14,7 @@ namespace Plotter.Fonts
 
         public RectangleF Bounds = RectangleF.Empty;
 
-        private string    _text  = text;
+        private AString  _text  = text;
         private FontFile  _font  = font ?? FontFile.Default;
         private float     _x     = x;
         private float     _y     = y;
@@ -24,7 +24,7 @@ namespace Plotter.Fonts
         private void Changed(string _)
         {
             _hasChanged = true;
-            hashCode = (Text, $"{Font.Face}{Font.Size}", X, Y, Align).GetHashCode();
+            hashCode = Text.GetHashCode();
         }
         private bool _hasChanged = false;
 
@@ -43,21 +43,18 @@ namespace Plotter.Fonts
         {
             if (_hasChanged || _vertices.Count == 0)
             {
-                _vertices = FontVertex.BuildString(Text, Font, X, Y, scaling, Align);
-                CalculateBoundsFromVertices();
+                FontVertex.BuildString(_vertices, Text, Font, X, Y, scaling, Align);
+                Bounds = CalculateBoundsFromVertices();
                 _hasChanged = false;
             }
             return _vertices;
         }
 
 
-        private void CalculateBoundsFromVertices()
+        private RectangleF CalculateBoundsFromVertices()
         {
             if (_vertices.Count == 0)
-            {
-                Bounds = RectangleF.Empty;
-                return;
-            }
+                return RectangleF.Empty;
 
             float minX = float.MaxValue, minY = float.MaxValue;
             float maxX = float.MinValue, maxY = float.MinValue;
@@ -68,15 +65,13 @@ namespace Plotter.Fonts
                 var bottomLeft = _vertices[i + 2].Position;
                 var bottomRight = _vertices[i + 5].Position;
 
-                // --- THE SIZING FIX ---
-                // Correctly use X for horizontal and Y for vertical min/max
                 minX = Math.Min(minX, bottomLeft.X);
                 minY = Math.Min(minY, bottomLeft.Y);
                 maxX = Math.Max(maxX, bottomRight.X);
                 maxY = Math.Max(maxY, topLeft.Y);
             }
 
-            Bounds = new RectangleF(minX, minY, maxX - minX, maxY - minY);
+            return new RectangleF(minX, minY, maxX - minX, maxY - minY);
         }
  
     }

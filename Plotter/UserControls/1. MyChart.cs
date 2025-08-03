@@ -40,14 +40,15 @@ namespace Plotter.UserControls
             _labelAreaRenderer?.Shutdown();
         }
 
+        Dictionary<string, double> _data = [];
         private void IO_FrameReceived(MySerialIO io, MyFrame frame)
         {
             if (TestMode) return;
             if (frame is not Text_Frame textFrame) return;
 
-            var data = MyTextParser.Parse(textFrame.Text); if (data == null) return;
+            MyTextParser.Parse(textFrame.Text, _data); if (_data.Count == 0) return;
 
-            foreach (var kvp in data)
+            foreach (var kvp in _data)
             {
                 if (Plots.TryGetValue(kvp.Key, out var plot) == false)
                 {
@@ -126,7 +127,7 @@ namespace Plotter.UserControls
 
         }
 
-        // Add this helper method inside the MyChart class
+        // Return this helper method inside the MyChart class
         private RectangleF CalculateTotalBounds(List<TextBlock> blocks)
         {
             RectangleF totalBounds = RectangleF.Empty;

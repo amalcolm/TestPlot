@@ -44,7 +44,7 @@ namespace Plotter.Fonts
             if (text != Text)
             { 
                 Text = text;
-                _vertices = FontVertex.BuildString(text, font ?? FontFile.Default, x, y, Scaling, textAlign);
+                FontVertex.BuildString(_vertices, text, font ?? FontFile.Default, x, y, Scaling, textAlign);
                 BindVertices();
             }
             Render();
