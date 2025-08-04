@@ -14,7 +14,7 @@ namespace Plotter.UserControls
         private readonly Dictionary<string, Tuple<TextBlock, TextBlock>> _blocks = [];
         private readonly List<TextBlock> _textBlocksToRender = [];
 
-        private LabelAreaRenderer _labelAreaRenderer = default!;
+        private LabelAreaRenderer? _labelAreaRenderer;
 
         public MyChart()
             => InitializeComponent();
@@ -103,7 +103,7 @@ namespace Plotter.UserControls
             if (!_textBlocksToRender.Any()) return;
             
             // 2. Calculate the total bounding box for all visible labels.
-            RectangleF totalBounds = CalculateTotalBounds(_textBlocksToRender);
+            RectangleF totalBounds = CalculateTotalBounds();
 
             // 3. Render the background with padding.
             if (!totalBounds.IsEmpty)
@@ -117,7 +117,7 @@ namespace Plotter.UserControls
                 );
                 var projection = Matrix4.CreateOrthographicOffCenter(0, MyGL.ClientSize.Width, 0, MyGL.ClientSize.Height, -1.0f, 1.0f);
                 
-                _labelAreaRenderer.Render(paddedBounds, projection);
+                _labelAreaRenderer?.Render(paddedBounds, projection);
 
                 GL.UseProgram(_textShaderProgram);
             }
@@ -128,26 +128,20 @@ namespace Plotter.UserControls
         }
 
         // Return this helper method inside the MyChart class
-        private RectangleF CalculateTotalBounds(List<TextBlock> blocks)
+        private RectangleF CalculateTotalBounds()
         {
             RectangleF totalBounds = RectangleF.Empty;
 
-            foreach (var block in blocks)
+            foreach (var block in _textBlocksToRender)
             {
-                // GetVertices ensures the bounds are recalculated if the block is dirty
-                block.GetVertices();
-
                 if (block.Bounds.IsEmpty) continue;
 
                 if (totalBounds.IsEmpty)
-                {
                     totalBounds = block.Bounds;
-                }
                 else
-                {
                     totalBounds = RectangleF.Union(totalBounds, block.Bounds);
-                }
             }
+        
             return totalBounds;
         }
     }

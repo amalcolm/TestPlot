@@ -22,6 +22,9 @@
 		<None Update=".gitattributes" Visible="false" />
 		<None Update="README.md" Visible="false" />
 		<None Update="LICENSE.txt" Visible="false" />
+		<None Update="Resources\Backgrounds\LabelArea.png">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Resources\Fonts\Roboto-Medium.json">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>

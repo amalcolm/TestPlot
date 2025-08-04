@@ -3,9 +3,9 @@ namespace Plotter.Fonts
 {
     public enum TextAlign { Left, Right }
 
-    class TextBlock(AString text, float x, float y, FontFile? font, TextAlign textAlign = TextAlign.Left)
+    class TextBlock(string text, float x, float y, FontFile? font, TextAlign textAlign = TextAlign.Left)
     {
-        public AString   Text  {get => _text;  set { if (_text  != value) { _text  = value; Changed(nameof(Text )); } } }
+        public string    Text  {get => _text;  set { if (_text  != value) { _text  = value; Changed(nameof(Text )); } } }
         public FontFile  Font  {get => _font;  set { if (_font  != value) { _font  = value; Changed(nameof(Font )); } } }
         public float     X     {get => _x;     set { if (_x     != value) { _x     = value; Changed(nameof(X    )); } } }
         public float     Y     {get => _y;     set { if (_y     != value) { _y     = value; Changed(nameof(Y    )); } } }
@@ -14,7 +14,7 @@ namespace Plotter.Fonts
 
         public RectangleF Bounds = RectangleF.Empty;
 
-        private AString  _text  = text;
+        private string    _text  = text;
         private FontFile  _font  = font ?? FontFile.Default;
         private float     _x     = x;
         private float     _y     = y;
