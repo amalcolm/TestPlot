@@ -20,20 +20,22 @@ namespace Plotter
         public struct Packet
         {
             public DateTime Timestamp;
-            public byte[] Data;
+            public List<byte> Data;
 
-            public static implicit operator Packet((DateTime timestamp, byte[] data) tuple)
+            public static implicit operator Packet((DateTime timestamp, List<byte> data) tuple)
                 => new() { Timestamp = tuple.timestamp, Data = tuple.data };
 
-            public static implicit operator (DateTime timestamp, byte[] data)(Packet packet)
+            public static implicit operator (DateTime timestamp, List<byte> data)(Packet packet)
                 => (packet.Timestamp, packet.Data);
         }
+        
+        public delegate void TextHandler (MySerialIO io, AString text  );
+        public delegate void FrameHandler(MySerialIO io, MyFrame frame );
+        public delegate void DataHandler (MySerialIO io, Packet  packet);
 
-        public delegate void FrameHandler(MySerialIO io, MyFrame frame);
-        public delegate void DataHandler(MySerialIO io, Packet packet);
-
+        public event TextHandler?  TextReceived;
         public event FrameHandler? FrameReceived;
-        public event DataHandler? DataReceived;
+        public event DataHandler?  DataReceived;
 
         public event EventHandler<string>? Error;
 
@@ -65,7 +67,7 @@ namespace Plotter
             _currentPortName = newPortName;
         }
 
-        public void Connect()
+        public async Task Connect()
         {
             if (isOpen) return;
             if (string.IsNullOrEmpty(_currentPortName))
@@ -83,8 +85,12 @@ namespace Plotter
                     ReadTimeout = 1500
                 };
 
-                // Now, open the port and start the reading task.
-                SP.Open();
+                for (int count = 0; count < 5 && !SP.IsOpen; count++)
+                {
+                    try { SP.Open(); break; }
+                    catch (FileNotFoundException) { await Task.Delay(500); }
+                }
+
                 isOpen = SP.IsOpen;
 
                 if (isOpen)
@@ -148,7 +154,7 @@ namespace Plotter
                         // If we have data but see no new bytes, we've found a gap
                         if (currentPacket.Count > 0 && packetStartTime.HasValue)
                         {
-                            ProcessData(packetStartTime.Value, [.. currentPacket]);
+                            ProcessData(packetStartTime.Value, currentPacket);
 
                             currentPacket.Clear();
                             packetStartTime = null;
@@ -227,8 +233,9 @@ namespace Plotter
         private static readonly byte[] HS_Plotter = { 0x10, 0x02, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x01 };
 
 
-        private void ProcessData(DateTime timestamp, byte[] bytes)
+        private void ProcessData(DateTime timestamp, List<byte> bytes)
         {
+            
             switch (Mode)
             {
                 case IOMode.Text: ProcessTextData(bytes); return;
@@ -237,7 +244,8 @@ namespace Plotter
 
             DataReceived?.Invoke(this, (timestamp, bytes));
 
-            for (int i = 0; i < bytes.Length; i++)
+            int length = bytes.Count;
+            for (int i = 0; i < length; i++)
             {
                 if (bytes[i] == HS_fNIRS_Probe[handshakeMatchIndex])
                 {
@@ -275,18 +283,16 @@ namespace Plotter
             }
         }
 
-        // Use a List<byte> as a class-level buffer.
 
         private readonly List<byte> byteBuffer = [];
 
-        private void ProcessTextData(byte[] bytes)
+        private void ProcessTextData(List<byte> bytes)
         {
             byteBuffer.AddRange(bytes);
             var time = stopwatch.Elapsed.TotalSeconds;
 
             while (true)
             {
-                // Get a Span that views the list's memory directly. No copy.
                 var bufferSpan = CollectionsMarshal.AsSpan(byteBuffer);
                 int newlineIndex = bufferSpan.IndexOf((byte)'\n');
 
@@ -298,28 +304,19 @@ namespace Plotter
                     lineLength--;
                 }
 
-                // Get a slice of the span representing just the line. No copy.
-                var lineSpan = bufferSpan[..lineLength];
+                var lineBytes = bufferSpan[..lineLength];
 
+                using var lineString = AString.Create(lineBytes, time);
 
-                // This is the *only allocation* in the loop.
-                var textFrame = new Text_Frame
-                {
-                    Time = time,
-                    Text = Encoding.UTF8.GetString(lineSpan)
-                };
+                TextReceived?.Invoke(this, lineString);
 
-                FrameReceived?.Invoke(this, textFrame);
-
-
-                // Efficiently remove the processed part of the list.
                 byteBuffer.RemoveRange(0, newlineIndex + 1);
             }
         }
-        public void ProcessFrameData(byte[] bytes)
+        public void ProcessFrameData(List<byte> bytes)
         {
             if (FindngStart)
-                for (int i = 0; i < bytes.Length - 1; i++)
+                for (int i = 0; i < bytes.Count - 1; i++)
                     if (bytes[i] == BaseFrame.DLE && bytes[i + 1] == BaseFrame.STX)
                     {
                         bytes = [.. bytes.Skip(i)];

@@ -58,7 +58,7 @@ namespace Plotter
                     // Your logic to try reopening the serial port
                     Debug.WriteLine("Received RECONNECT. Attempting to open port.");
                     if (IO?.isOpen == false)
-                        IO.Connect();
+                        await IO.Connect();
                     break;
             }
         }

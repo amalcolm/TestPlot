@@ -67,7 +67,7 @@ namespace Plotter.UserControls
                 plot.Render();
             }
 
-            Debug = $"Plots: {Plots.Count}, Time: {_maxTime:F2}, Window: {TimeWindowSeconds}s";
+ //           Debug = $"Plots: {Plots.Count}, Time: {_maxTime:F2}, Window: {TimeWindowSeconds}s";
         }
 
         protected override void DrawText()

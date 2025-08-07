@@ -14,7 +14,7 @@ namespace TestPlot
                 io.DataReceived -= Io_OnData;
 
                 await io.SetPort(data);
-                io.Connect();
+                await io.Connect();
 
                 if (io.isOpen)
                     io.DataReceived += Io_OnData;
@@ -117,7 +117,7 @@ namespace TestPlot
 
         private void Io_OnData(MySerialIO io, MySerialIO.Packet packet)
         {
-            System.Diagnostics.Debug.WriteLine(packet.Data.Length);
+            System.Diagnostics.Debug.WriteLine(packet.Data.Count);
         }
 
     }

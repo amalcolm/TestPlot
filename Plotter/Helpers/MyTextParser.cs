@@ -5,7 +5,7 @@ namespace Plotter
     internal static class MyTextParser
     {
         // Caller supplies (and reuses) the dictionary so we don’t keep a big static one alive.
-        public static void Parse(string text, Dictionary<string, double> target)
+        public static void Parse(AString text, Dictionary<string, double> target)
         {
             target.Clear();                     // caller decides whether to clear
             ReadOnlySpan<char> span = text;     // same as text.AsSpan()
