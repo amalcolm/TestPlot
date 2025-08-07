@@ -1,17 +1,26 @@
 ﻿
+using static System.Net.Mime.MediaTypeNames;
+
 namespace Plotter.Fonts
 {
     public enum TextAlign { Left, Right }
 
-    class TextBlock(string text, float x, float y, FontFile? font, TextAlign textAlign = TextAlign.Left) : IDisposable
+    class TextBlock : IDisposable
     {
-        public string    oldText  {get => new(Span);  set { SetValue(text.AsSpan()); /* Changed is called inside SetValue */ } }
+        public TextBlock(string text, float x, float y, FontFile? font, TextAlign textAlign = TextAlign.Left)
+        {
+            _font  = font ?? FontFile.Default;
+            _x     = x;
+            _y     = y;
+            _align = textAlign;
+            SetValue(text.AsSpan());
+        }
+        
 
         public FontFile  Font  {get => _font;      set { if (_font  != value) { _font  = value; Changed(nameof(Font )); } } }
         public float     X     {get => _x;         set { if (_x     != value) { _x     = value; Changed(nameof(X    )); } } }
         public float     Y     {get => _y;         set { if (_y     != value) { _y     = value; Changed(nameof(Y    )); } } }
         public TextAlign Align {get => _align;     set { if (_align != value) { _align = value; Changed(nameof(Align)); } } }
-
 
         public ReadOnlySpan<char> Span => _buffer.AsSpan(0, _length);
 
@@ -38,7 +47,7 @@ namespace Plotter.Fonts
                     ClearBuffer(); // Return the old buffer
                     _buffer = tempBuffer; // Keep the new buffer
                     _length = charsWritten;
-                    Changed(nameof(oldText));
+                    Changed("Text");
                     return; // Success
                 }
             }
@@ -68,10 +77,10 @@ namespace Plotter.Fonts
 
         private char[]?   _buffer;
         private int       _length = 0;
-        private FontFile  _font   = font ?? FontFile.Default;
-        private float     _x      = x;
-        private float     _y      = y;
-        private TextAlign _align  = textAlign;
+        private FontFile  _font;
+        private float     _x;
+        private float     _y;
+        private TextAlign _align;
 
         public int hashCode { get; private set; } = 0;
         private void Changed(string _)
@@ -90,7 +99,7 @@ namespace Plotter.Fonts
 
         private bool _hasChanged = false;
 
-        override public string ToString() => $"{oldText} ({X}, {Y}) [{Font.Face} {Font.Size}] {Align}";
+        override public string ToString() => $"{Span} ({X}, {Y}) [{Font.Face} {Font.Size}] {Align}";
         override public bool Equals(object? obj)
         {
             if (obj is TextBlock other)
@@ -98,29 +107,40 @@ namespace Plotter.Fonts
             return false;
         }
 
-        private List<FontVertex> _vertices = [];
+        private FontVertex[] _vertices = [];
+        private int _vertexCount = 0;
 
-        public List<FontVertex> GetVertices(float scaling = 0.5f)
+        public ReadOnlySpan<FontVertex> GetVertices(float scaling = 0.5f)
         {
-            if (_hasChanged || _vertices.Count == 0)
+            if (_hasChanged)
             {
-                FontVertex.BuildString(_vertices, Span, Font, X, Y, scaling, Align);
+                // Ensure our internal array is big enough for the text.
+                int requiredCount = _length * 6; // 6 vertices per character
+                if (_vertices.Length < requiredCount)
+                    Array.Resize(ref _vertices, requiredCount);
+
+                // Build the vertex data directly into our array.
+                _vertexCount = FontVertex.BuildString(_vertices, 0, Span, Font, X, Y, scaling, Align);
+
+                // Recalculate bounds since the vertices have changed.
                 Bounds = CalculateBoundsFromVertices();
                 _hasChanged = false;
             }
-            return _vertices;
+            // Return a zero-allocation slice of the array.
+            return _vertices.AsSpan(0, _vertexCount);
         }
+
 
 
         private RectangleF CalculateBoundsFromVertices()
         {
-            if (_vertices.Count == 0)
+            if (_vertexCount == 0)
                 return RectangleF.Empty;
 
             float minX = float.MaxValue, minY = float.MaxValue;
             float maxX = float.MinValue, maxY = float.MinValue;
 
-            for (int i = 0; i < _vertices.Count; i += 6)
+            for (int i = 0; i < _vertexCount; i += 6)
             {
                 var topLeft = _vertices[i].Position;
                 var bottomLeft = _vertices[i + 2].Position;
