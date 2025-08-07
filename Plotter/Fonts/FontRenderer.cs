@@ -12,7 +12,6 @@ namespace Plotter.Fonts
         private int _vertexCount = 0;
         private int _bufferSize = 0; // Current size of the VBO in _vertices
 
-        public string Text { get; set; } = string.Empty;
         public FontFile Font { get; set; } = default!;
 
 
@@ -35,27 +34,28 @@ namespace Plotter.Fonts
             GL.BindVertexArray(0);
         }
 
-        public void RenderText(string text, float x, float y, FontFile? font = null, TextAlign textAlign = TextAlign.Left)
-        {   if (string.IsNullOrEmpty(text)) return;
+        public void RenderText(ReadOnlySpan<char> text, float x, float y, FontFile? font = null, TextAlign textAlign = TextAlign.Left)
+        {
+            if (text.IsEmpty) return;
 
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, font?.TextureId ?? FontFile.Default.TextureId);
 
-            if (text != Text)
-            { 
-                Text = text;
-                FontVertex.BuildString(_vertices, text, font ?? FontFile.Default, x, y, Scaling, textAlign);
-                BindVertices();
-            }
+            FontVertex.BuildString(_vertices, text, font ?? FontFile.Default, x, y, Scaling, textAlign);
+            BindVertices();
+
             Render();
         }
 
+
+        public void RenderText(string text, float x, float y, FontFile? font = null, TextAlign textAlign = TextAlign.Left)
+            => RenderText(text.AsSpan(), x, y, font, textAlign);
+
         public void RenderText(TextBlock block)
-            => RenderText(block.Text, block.X, block.Y, block.Font, block.Align);
+            => RenderText(block.oldText, block.X, block.Y, block.Font, block.Align);
 
         public void RenderText(IEnumerable<TextBlock> blocks)
         {
-            Text = "";
             _vertices.Clear();
 
             GL.ActiveTexture(TextureUnit.Texture0);
@@ -78,13 +78,15 @@ namespace Plotter.Fonts
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo);
 
             int requiredSize = _vertexCount * sizeof(float) * 4;
-            _bufferSize = Math.Max(_bufferSize, requiredSize);
+            if (requiredSize > _bufferSize)
+            {
+                _bufferSize = requiredSize;
+                GL.BufferData(BufferTarget.ArrayBuffer, _bufferSize, IntPtr.Zero, BufferUsageHint.StreamDraw);
+            }
 
-            GL.BufferData(BufferTarget.ArrayBuffer, _bufferSize, IntPtr.Zero, BufferUsageHint.StreamDraw);
-            GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, requiredSize, _vertices.ToArray());
-        }
+            GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, _vertexCount * sizeof(float) * 4, _vertices.ToArray());
+        }   
 
-        
 
         public void Render()
         {

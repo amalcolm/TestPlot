@@ -84,11 +84,8 @@ namespace Plotter.UserControls
             {
                 if (_blocks.TryGetValue(kvp.Key, out var tuple))
                 {
-                    string newText = kvp.Value.ToString("F2");
-                    if (tuple.Item2.Text != newText)
-                    {
-                        tuple.Item2.Text = newText; // This sets the 'dirty' flag inside the TextBlock
-                    }
+                    tuple.Item2.SetValue(kvp.Value, "F2");
+
                     _textBlocksToRender.Add(tuple.Item1);
                     _textBlocksToRender.Add(tuple.Item2);
                 }
@@ -138,5 +135,23 @@ namespace Plotter.UserControls
         
             return totalBounds;
         }
+
+        // Add cleanup logic when plots are removed to prevent memory leaks from the pool.
+        private void RemovePlot(string key) // Example of a cleanup method
+        {
+            if (Plots.Remove(key, out var plot))
+            {
+                plot.Shutdown(); // Release OpenGL resources
+            }
+
+            if (_blocks.Remove(key, out var textBlocks))
+            {
+                textBlocks.Item1.Dispose(); // Return label buffer to pool
+                textBlocks.Item2.Dispose(); // Return value buffer to pool
+            }
+
+            _latestValues.Remove(key);
+        }
+
     }
 }
