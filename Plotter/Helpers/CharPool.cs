@@ -6,7 +6,7 @@ namespace Plotter
     {
         private static readonly ConcurrentBag<char[]> _pool = [];
         private const int InitialBagSize = 8192;
-        private const int BufferSize = 32;
+        private const int BufferSize = 128;
 
         static CharPool()
         {

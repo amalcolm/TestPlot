@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Text;
 
 namespace Plotter
 {
@@ -7,9 +8,11 @@ namespace Plotter
         public ReadOnlySpan<char> Span { get; }
         public readonly int Length { get; }
         private readonly char[]? _bufferToReturn;
+        public double Time { get; }
 
-        private AString(char[]? buffer, int length )
+        private AString(char[]? buffer, int length, double time = 0 )
         {
+            Time = time;
             _bufferToReturn = buffer;
             Length = length;
             if (buffer == null || length <= 0)
@@ -21,6 +24,21 @@ namespace Plotter
             Span = buffer.AsSpan(0, length);
         }
 
+        public static AString Create(ReadOnlySpan<byte> sourceBytes, double time = 0)
+        {
+            if (sourceBytes.IsEmpty)
+                return Empty;
+
+            int charCount = Encoding.UTF8.GetCharCount(sourceBytes);
+            if (charCount == 0)
+                return Empty;
+
+            var buffer = CharPool.Rent();
+
+            int charsWritten = Encoding.UTF8.GetChars(sourceBytes, buffer);
+
+            return new AString(buffer, charsWritten, time);
+        }
         public static AString Create(ReadOnlySpan<char> sourceText)
         {
             var buffer = CharPool.Rent();

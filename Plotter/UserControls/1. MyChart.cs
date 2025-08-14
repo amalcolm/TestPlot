@@ -25,7 +25,9 @@ namespace Plotter.UserControls
         private void MyChart_Load(object sender, EventArgs e)
         {
             IO = new();
-            IO.FrameReceived += IO_FrameReceived;
+            IO.TextReceived += IO_TextReceived;
+//            IO.FrameReceived += IO_FrameReceived;
+
         }
 
         protected override void Init()
@@ -41,13 +43,9 @@ namespace Plotter.UserControls
         }
 
         Dictionary<string, double> _data = [];
-        private void IO_FrameReceived(MySerialIO io, MyFrame frame)
+        private void IO_TextReceived(MySerialIO _, AString line)
         {
-            if (TestMode) return;
-            if (frame is not Text_Frame textFrame) return;
-
-            MyTextParser.Parse(textFrame.Text, _data); if (_data.Count == 0) return;
-
+            MyTextParser.Parse(line, _data); if (_data.Count == 0) return;
             foreach (var kvp in _data)
             {
                 if (Plots.TryGetValue(kvp.Key, out var plot) == false)
@@ -56,14 +54,11 @@ namespace Plotter.UserControls
                     Plots[kvp.Key] = plot;
                     CreateTextBlocksForLabel(kvp.Key);
                 }
-
-                plot.Add(textFrame.Time, kvp.Value);
+                plot.Add(line.Time, kvp.Value);
                 _latestValues[kvp.Key] = kvp.Value;
             }
         }
-
-
-
+        
 
         private void CreateTextBlocksForLabel(string label)
         {
@@ -84,17 +79,13 @@ namespace Plotter.UserControls
             if (font == null) return;
 
             _textBlocksToRender.Clear();
-
             // 1. Populate the list of blocks to render and flag if their content has changed.
             foreach (var kvp in _latestValues)
             {
                 if (_blocks.TryGetValue(kvp.Key, out var tuple))
                 {
-                    string newText = kvp.Value.ToString("F2");
-                    if (tuple.Item2.Text != newText)
-                    {
-                        tuple.Item2.Text = newText; // This sets the 'dirty' flag inside the TextBlock
-                    }
+                    tuple.Item2.SetValue(kvp.Value, "F2");
+
                     _textBlocksToRender.Add(tuple.Item1);
                     _textBlocksToRender.Add(tuple.Item2);
                 }
@@ -144,5 +135,23 @@ namespace Plotter.UserControls
         
             return totalBounds;
         }
+
+        // Add cleanup logic when plots are removed to prevent memory leaks from the pool.
+        private void RemovePlot(string key) // Example of a cleanup method
+        {
+            if (Plots.Remove(key, out var plot))
+            {
+                plot.Shutdown(); // Release OpenGL resources
+            }
+
+            if (_blocks.Remove(key, out var textBlocks))
+            {
+                textBlocks.Item1.Dispose(); // Return label buffer to pool
+                textBlocks.Item2.Dispose(); // Return value buffer to pool
+            }
+
+            _latestValues.Remove(key);
+        }
+
     }
 }
